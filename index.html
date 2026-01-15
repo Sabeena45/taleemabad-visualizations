@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cross-Product Retention Analysis | Taleemabad</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #fdfbfb 0%, #f7f7f7 100%);
+            color: #2c3e50;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            padding: 50px;
+        }
+
+        h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1a202c;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #718096;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            position: relative;
+            margin-bottom: 60px;
+        }
+
+        svg {
+            overflow: visible;
+        }
+
+        .axis path,
+        .axis line {
+            stroke: #e2e8f0;
+            stroke-width: 1px;
+        }
+
+        .axis text {
+            font-size: 13px;
+            fill: #718096;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .grid line {
+            stroke: #f1f5f9;
+            stroke-width: 1px;
+            stroke-dasharray: 3, 3;
+        }
+
+        .line {
+            fill: none;
+            stroke-width: 3px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .line-niete { stroke: #3B82F6; }
+        .line-rumi { stroke: #10B981; }
+        .line-schoolpilot { stroke: #F59E0B; }
+        .line-digitalcoach { stroke: #8B5CF6; }
+
+        .dot {
+            r: 4;
+            fill: white;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dot:hover {
+            r: 6;
+        }
+
+        .dot-niete { stroke: #3B82F6; }
+        .dot-rumi { stroke: #10B981; }
+        .dot-schoolpilot { stroke: #F59E0B; }
+        .dot-digitalcoach { stroke: #8B5CF6; }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .legend-item:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+
+        .legend-line {
+            width: 30px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .legend-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .legend-stat {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(26, 32, 44, 0.95);
+            color: white;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 13px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            max-width: 280px;
+            z-index: 1000;
+        }
+
+        .tooltip-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 6px;
+        }
+
+        .tooltip-stat {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+
+        .insights {
+            margin-top: 50px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .insight-card {
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+        }
+
+        .insight-card.niete {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .insight-card.rumi {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .insight-card.schoolpilot {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .insight-card.digitalcoach {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .insight-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .insight-text {
+            font-size: 14px;
+            line-height: 1.7;
+            opacity: 0.95;
+        }
+
+        .methodology {
+            margin-top: 50px;
+            padding: 25px;
+            background: #f0fdf4;
+            border-left: 4px solid #10B981;
+            border-radius: 10px;
+        }
+
+        .methodology-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #065f46;
+            margin-bottom: 15px;
+        }
+
+        .methodology-list {
+            font-size: 14px;
+            color: #047857;
+            line-height: 1.8;
+        }
+
+        .methodology-list li {
+            margin-bottom: 8px;
+        }
+
+        .timeline-banner {
+            margin: 30px 0;
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+            border-radius: 12px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .timeline-info {
+            font-size: 13px;
+        }
+
+        .timeline-product {
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .timeline-date {
+            color: #718096;
+        }
+
+        .source {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .source a {
+            color: #3B82F6;
+            text-decoration: none;
+        }
+
+        .source a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cross-Product Retention Analysis</h1>
+        <div class="subtitle">Multi-cohort averaged retention: Each line shows the <strong>average retention rate across ALL cohorts</strong> for that product, from Week 0 (100%) through their retention journey</div>
+
+        <div class="timeline-banner">
+            <div class="timeline-item">
+                <div class="timeline-dot" style="background: #3B82F6;"></div>
+                <div class="timeline-info">
+                    <span class="timeline-product">NIETE</span>
+                    <span class="timeline-date">April 2024 • 59 cohorts • 5,435 users</span>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot" style="background: #10B981;"></div>
+                <div class="timeline-info">
+                    <span class="timeline-product">Rumi</span>
+                    <span class="timeline-date">Nov 2025 • 11 cohorts • 974 users</span>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot" style="background: #F59E0B;"></div>
+                <div class="timeline-info">
+                    <span class="timeline-product">SchoolPilot</span>
+                    <span class="timeline-date">Nov 2025 • 4 cohorts • 34 users</span>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot" style="background: #8B5CF6;"></div>
+                <div class="timeline-info">
+                    <span class="timeline-product">Digital Coach</span>
+                    <span class="timeline-date">Nov 2025 • 4 cohorts • 16 users</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend" id="legend"></div>
+
+        <div class="chart-container">
+            <svg id="chart"></svg>
+            <div class="tooltip" id="tooltip"></div>
+        </div>
+
+        <div class="insights">
+            <div class="insight-card niete">
+                <div class="insight-title">🔵 NIETE (Teacher Training Platform)</div>
+                <div class="insight-text">
+                    <strong>Longest history:</strong> 59 cohorts spanning 30 weeks from April 2024. Shows typical SaaS retention curve: rapid drop to ~26% by Week 1, gradual decline to ~12% by Week 15, then interesting <strong>recovery to 47.7% by Week 30</strong>. This late-stage increase suggests a core group of highly engaged power users who remain after casual users churn. 5,435 total teachers analyzed.
+                </div>
+            </div>
+
+            <div class="insight-card rumi">
+                <div class="insight-title">🟢 Rumi (AI WhatsApp Coaching)</div>
+                <div class="insight-text">
+                    <strong>Newest product:</strong> 11 cohorts since November 2025. Week 1 retention at 20.65%, drops to 9.51% by Week 5, then shows signs of stabilization around 15-20%. Pattern suggests WhatsApp-based coaching achieves moderate engagement but hasn't yet formed daily habits. 974 teachers analyzed across cohorts.
+                </div>
+            </div>
+
+            <div class="insight-card schoolpilot">
+                <div class="insight-title">🟡 SchoolPilot (Observation Platform)</div>
+                <div class="insight-text">
+                    <strong>Pilot phase:</strong> Only 4 cohorts with 34 users total - treat data cautiously. Retention shows interesting late spike at Week 7 (41.67%), but small sample size makes interpretation unreliable. Activity defined as classroom observation submissions. Needs more data before drawing conclusions.
+                </div>
+            </div>
+
+            <div class="insight-card digitalcoach">
+                <div class="insight-title">🟣 Digital Coach (FICO Observations)</div>
+                <div class="insight-text">
+                    <strong>Minimal data:</strong> FICO pilot with only 16 users and 2 weeks of averaged retention data. Week 1 retention at 66.67% is surprisingly high but based on just 2 cohorts meeting the averaging threshold. This tool is designed for periodic formal evaluations, not daily use.
+                </div>
+            </div>
+        </div>
+
+        <div class="methodology">
+            <div class="methodology-title">✅ Methodology: Multi-Cohort Averaging</div>
+            <ul class="methodology-list">
+                <li><strong>Definition:</strong> Each data point represents the <strong>average retention rate across all cohorts</strong> that have data for that week. This provides a more robust view than single-cohort tracking.</li>
+                <li><strong>Week 0 = 100%:</strong> By definition, all users in a cohort are "active" in their signup week. Each cohort starts at 100% and is tracked independently.</li>
+                <li><strong>Cohort threshold:</strong> Only cohorts with ≥5 users (NIETE, Rumi) or ≥2 users (SchoolPilot, Digital Coach) included to reduce noise.</li>
+                <li><strong>Timeline differences factored in:</strong> NIETE started April 2024 (can show 30 weeks), while newer products (Nov 2025) have limited historical data.</li>
+                <li><strong>Activity definitions:</strong> NIETE = lesson plan sessions; Rumi = chat activity; SchoolPilot/Digital Coach = observation submissions.</li>
+                <li><strong>Declining cohort counts:</strong> Later weeks show fewer cohorts because newer cohorts haven't reached those weeks yet. This is expected behavior.</li>
+            </ul>
+        </div>
+
+        <div class="source">
+            <strong>Data Sources:</strong> NIETE BigQuery (user_session_lp_time + users_user, 59 cohorts), Rumi (Supabase chat_sessions, 11 cohorts), SchoolPilot (Neon observations, 4 cohorts), Digital Coach (Neon observations, 4 cohorts) |
+            <strong>Analysis Date:</strong> January 15, 2026 |
+            <strong>Total Users Analyzed:</strong> 6,459 across 78 cohorts |
+            <strong>Methodology:</strong> Multi-cohort averaging with Week 0 = 100% baseline
+        </div>
+    </div>
+
+    <script>
+        // Data - MULTI-COHORT AVERAGED: Each point is average across all cohorts for that week
+        const data = {
+            niete: [
+                {week: 0, retention: 100.0, cohorts: 59, totalUsers: 5435},
+                {week: 1, retention: 25.98, cohorts: 22, totalUsers: 2212},
+                {week: 2, retention: 26.73, cohorts: 20, totalUsers: 2169},
+                {week: 3, retention: 23.47, cohorts: 20, totalUsers: 2173},
+                {week: 4, retention: 24.12, cohorts: 19, totalUsers: 2141},
+                {week: 5, retention: 19.89, cohorts: 19, totalUsers: 2143},
+                {week: 6, retention: 18.20, cohorts: 17, totalUsers: 2061},
+                {week: 7, retention: 16.72, cohorts: 16, totalUsers: 2048},
+                {week: 8, retention: 13.49, cohorts: 16, totalUsers: 2048},
+                {week: 9, retention: 14.20, cohorts: 13, totalUsers: 1877},
+                {week: 10, retention: 13.67, cohorts: 14, totalUsers: 1909},
+                {week: 11, retention: 11.97, cohorts: 14, totalUsers: 1909},
+                {week: 12, retention: 13.19, cohorts: 15, totalUsers: 1963},
+                {week: 13, retention: 13.24, cohorts: 14, totalUsers: 1865},
+                {week: 14, retention: 13.23, cohorts: 13, totalUsers: 1771},
+                {week: 15, retention: 12.43, cohorts: 12, totalUsers: 1564},
+                {week: 16, retention: 13.63, cohorts: 10, totalUsers: 1489},
+                {week: 17, retention: 16.91, cohorts: 11, totalUsers: 1506},
+                {week: 18, retention: 20.57, cohorts: 9, totalUsers: 1436},
+                {week: 19, retention: 20.54, cohorts: 10, totalUsers: 1453},
+                {week: 20, retention: 23.24, cohorts: 10, totalUsers: 1453},
+                {week: 21, retention: 25.96, cohorts: 10, totalUsers: 1453},
+                {week: 22, retention: 25.99, cohorts: 10, totalUsers: 1453},
+                {week: 23, retention: 25.22, cohorts: 9, totalUsers: 1442},
+                {week: 24, retention: 21.04, cohorts: 8, totalUsers: 1427},
+                {week: 25, retention: 24.27, cohorts: 7, totalUsers: 1410},
+                {week: 26, retention: 29.85, cohorts: 6, totalUsers: 1374},
+                {week: 27, retention: 36.76, cohorts: 5, totalUsers: 1328},
+                {week: 28, retention: 42.98, cohorts: 4, totalUsers: 1220},
+                {week: 29, retention: 46.87, cohorts: 3, totalUsers: 1075},
+                {week: 30, retention: 47.70, cohorts: 2, totalUsers: 788}
+            ],
+            rumi: [
+                {week: 0, retention: 100.0, cohorts: 11, totalUsers: 974},
+                {week: 1, retention: 20.65, cohorts: 10, totalUsers: 776},
+                {week: 2, retention: 19.42, cohorts: 8, totalUsers: 726},
+                {week: 3, retention: 15.82, cohorts: 7, totalUsers: 707},
+                {week: 4, retention: 14.67, cohorts: 7, totalUsers: 707},
+                {week: 5, retention: 9.51, cohorts: 6, totalUsers: 543},
+                {week: 6, retention: 14.72, cohorts: 5, totalUsers: 371},
+                {week: 7, retention: 15.54, cohorts: 4, totalUsers: 287},
+                {week: 8, retention: 17.77, cohorts: 3, totalUsers: 123},
+                {week: 9, retention: 19.59, cohorts: 2, totalUsers: 98}
+            ],
+            schoolpilot: [
+                {week: 0, retention: 100.0, cohorts: 4, totalUsers: 34},
+                {week: 1, retention: 25.76, cohorts: 2, totalUsers: 14},
+                {week: 2, retention: 30.81, cohorts: 3, totalUsers: 16},
+                {week: 7, retention: 41.67, cohorts: 2, totalUsers: 5}
+            ],
+            digitalcoach: [
+                {week: 0, retention: 100.0, cohorts: 4, totalUsers: 15},
+                {week: 1, retention: 66.67, cohorts: 2, totalUsers: 5}
+            ]
+        };
+
+        // Chart dimensions
+        const margin = {top: 20, right: 150, bottom: 60, left: 70};
+        const width = 1200 - margin.left - margin.right;
+        const height = 500 - margin.top - margin.bottom;
+
+        // Create SVG
+        const svg = d3.select("#chart")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Scales - extended to Week 30
+        const xScale = d3.scaleLinear()
+            .domain([0, 30])
+            .range([0, width]);
+
+        const yScale = d3.scaleLinear()
+            .domain([0, 100])
+            .range([height, 0]);
+
+        // Grid
+        svg.append("g")
+            .attr("class", "grid")
+            .call(d3.axisLeft(yScale)
+                .tickSize(-width)
+                .tickFormat("")
+            );
+
+        // Vertical grid lines for key weeks
+        [5, 10, 15, 20, 25, 30].forEach(week => {
+            svg.append("line")
+                .attr("x1", xScale(week))
+                .attr("y1", 0)
+                .attr("x2", xScale(week))
+                .attr("y2", height)
+                .attr("stroke", "#f1f5f9")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "3, 3");
+        });
+
+        // Axes
+        const xAxis = d3.axisBottom(xScale)
+            .ticks(15)
+            .tickFormat(d => d === 0 ? 'Week 0' : d);
+
+        const yAxis = d3.axisLeft(yScale)
+            .ticks(10)
+            .tickFormat(d => `${d}%`);
+
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${height})`)
+            .call(xAxis);
+
+        svg.append("g")
+            .attr("class", "axis")
+            .call(yAxis);
+
+        // Axis labels
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", height + 45)
+            .attr("text-anchor", "middle")
+            .style("font-size", "14px")
+            .style("fill", "#4a5568")
+            .style("font-weight", "500")
+            .text("Weeks Since Signup (Averaged Across All Cohorts)");
+
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height / 2)
+            .attr("y", -50)
+            .attr("text-anchor", "middle")
+            .style("font-size", "14px")
+            .style("fill", "#4a5568")
+            .style("font-weight", "500")
+            .text("Average Retention Rate (%)");
+
+        // Line generator with smooth curves
+        const line = d3.line()
+            .x(d => xScale(d.week))
+            .y(d => yScale(d.retention))
+            .curve(d3.curveMonotoneX);
+
+        // Product configurations
+        const products = [
+            {name: 'niete', data: data.niete, color: '#3B82F6', label: 'NIETE', cohortInfo: '59 cohorts, 5,435 users', launchDate: 'Apr 2024'},
+            {name: 'rumi', data: data.rumi, color: '#10B981', label: 'Rumi', cohortInfo: '11 cohorts, 974 users', launchDate: 'Nov 2025'},
+            {name: 'schoolpilot', data: data.schoolpilot, color: '#F59E0B', label: 'SchoolPilot', cohortInfo: '4 cohorts, 34 users', launchDate: 'Nov 2025'},
+            {name: 'digitalcoach', data: data.digitalcoach, color: '#8B5CF6', label: 'Digital Coach', cohortInfo: '4 cohorts, 16 users', launchDate: 'Nov 2025'}
+        ];
+
+        // Draw lines and dots
+        products.forEach(product => {
+            // Line
+            svg.append("path")
+                .datum(product.data)
+                .attr("class", `line line-${product.name}`)
+                .attr("d", line)
+                .style("stroke", product.color);
+
+            // Dots
+            svg.selectAll(`.dot-${product.name}`)
+                .data(product.data)
+                .enter()
+                .append("circle")
+                .attr("class", `dot dot-${product.name}`)
+                .attr("cx", d => xScale(d.week))
+                .attr("cy", d => yScale(d.retention))
+                .style("stroke", product.color)
+                .on("mouseover", function(event, d) {
+                    d3.select(this).attr("r", 6);
+                    d3.select("#tooltip")
+                        .style("opacity", 1)
+                        .style("left", (event.pageX + 15) + "px")
+                        .style("top", (event.pageY - 15) + "px")
+                        .html(`
+                            <div class="tooltip-title" style="color: ${product.color}">${product.label}</div>
+                            <div class="tooltip-stat">
+                                <span>Week:</span>
+                                <strong>${d.week}</strong>
+                            </div>
+                            <div class="tooltip-stat">
+                                <span>Avg Retention:</span>
+                                <strong>${d.retention.toFixed(1)}%</strong>
+                            </div>
+                            <div class="tooltip-stat">
+                                <span>Cohorts Averaged:</span>
+                                <strong>${d.cohorts}</strong>
+                            </div>
+                            <div class="tooltip-stat">
+                                <span>Total Users:</span>
+                                <strong>${d.totalUsers.toLocaleString()}</strong>
+                            </div>
+                            <div class="tooltip-stat" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
+                                <span>Launch:</span>
+                                <strong>${product.launchDate}</strong>
+                            </div>
+                        `);
+                })
+                .on("mouseout", function() {
+                    d3.select(this).attr("r", 4);
+                    d3.select("#tooltip").style("opacity", 0);
+                });
+
+            // End label
+            const lastPoint = product.data[product.data.length - 1];
+            svg.append("text")
+                .attr("x", xScale(lastPoint.week) + 10)
+                .attr("y", yScale(lastPoint.retention))
+                .attr("dy", "0.35em")
+                .style("font-size", "12px")
+                .style("font-weight", "600")
+                .style("fill", product.color)
+                .text(`${product.label} (${lastPoint.retention.toFixed(0)}%)`);
+        });
+
+        // Legend
+        const legend = d3.select("#legend");
+        products.forEach(product => {
+            const item = legend.append("div")
+                .attr("class", "legend-item");
+
+            item.append("div")
+                .attr("class", "legend-line")
+                .style("background-color", product.color);
+
+            item.append("span")
+                .attr("class", "legend-text")
+                .text(product.label);
+
+            item.append("span")
+                .attr("class", "legend-stat")
+                .text(product.cohortInfo);
+
+            const week1 = product.data.find(d => d.week === 1);
+            if (week1) {
+                item.append("span")
+                    .attr("class", "legend-stat")
+                    .style("color", product.color)
+                    .style("font-weight", "600")
+                    .text(`Week 1: ${week1.retention.toFixed(1)}%`);
+            }
+        });
+    </script>
+</body>
+</html>
