@@ -104,7 +104,7 @@
         }
         .summary {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
             margin-bottom: 30px;
         }
@@ -142,23 +142,18 @@
         </div>
 
         <div class="summary">
-            <div class="summary-card" style="border-color: #3B82F6;">
-                <div class="value">43.3%</div>
-                <div class="label">NIETE</div>
-                <div class="sublabel">Week 4 retention</div>
-            </div>
             <div class="summary-card" style="border-color: #10B981;">
-                <div class="value">12.7%</div>
+                <div class="value">10.8%</div>
                 <div class="label">Rumi</div>
                 <div class="sublabel">Week 4 retention</div>
             </div>
             <div class="summary-card" style="border-color: #F59E0B;">
-                <div class="value">95.3%</div>
+                <div class="value">85.2%</div>
                 <div class="label">SchoolPilot</div>
                 <div class="sublabel">Week 4 retention</div>
             </div>
             <div class="summary-card" style="border-color: #EF4444;">
-                <div class="value">12.5%</div>
+                <div class="value">15.8%</div>
                 <div class="label">Digital Coach</div>
                 <div class="sublabel">Week 4 retention</div>
             </div>
@@ -167,11 +162,6 @@
         <div id="chart"></div>
 
         <div class="legend">
-            <div class="legend-item">
-                <div class="legend-line" style="background: #3B82F6;"></div>
-                <span>NIETE</span>
-                <span class="legend-count">(7,705 users)</span>
-            </div>
             <div class="legend-item">
                 <div class="legend-line" style="background: #10B981;"></div>
                 <span>Rumi</span>
@@ -185,46 +175,40 @@
             <div class="legend-item">
                 <div class="legend-line" style="background: #EF4444;"></div>
                 <span>Digital Coach</span>
-                <span class="legend-count">(8 users)*</span>
+                <span class="legend-count">(19 users)*</span>
             </div>
         </div>
         <div class="footnote" style="text-align: center; font-size: 0.7rem; color: #aaa; margin-top: 16px;">
-            *Small sample size • SchoolPilot tracks school-level retention (mandatory compliance tool) • Data as of Jan 15, 2026
+            *Small sample • SchoolPilot = school-level (mandatory compliance) • Week N = activity N weeks after signup • Jan 15, 2026
         </div>
     </div>
 
     <script>
         // Product retention data (weekly retention rates)
-        // Corrected calculation: tracking same users returning after signup
-        // Data calculated 2026-01-15 with proper cohort retention methodology
+        // Recalculated 2026-01-15 with consistent methodology:
+        // Week N = % of users who had ANY activity in days (N*7) to ((N+1)*7 - 1) after signup
+        // Only includes users with 28+ days of history
         const products = [
-            {
-                name: 'NIETE',
-                color: '#3B82F6',
-                users: 7705,
-                // Weekly retention based on analytics_events activity
-                data: [100, 55.8, 49.2, 47.5, 43.3]
-            },
             {
                 name: 'Rumi',
                 color: '#10B981',
                 users: 622,
-                // Weekly retention based on conversations activity
-                data: [97.9, 26.7, 14.8, 16.6, 12.7]
+                // 622 users with 28+ days since signup
+                data: [98.4, 14.6, 18.5, 13.5, 10.8, 5.0, 10.0, 3.2, 3.1]
             },
             {
                 name: 'SchoolPilot',
                 color: '#F59E0B',
                 users: 149,
-                // School-level retention (B2B compliance tool - mandatory usage)
-                data: [100, 99.3, 96.0, 95.3, 95.3]
+                // 149 schools - B2B mandatory compliance (daily attendance)
+                data: [100, 99.3, 96.0, 95.3, 85.2, 85.2, 84.6, 84.6, 84.6]
             },
             {
                 name: 'Digital Coach',
                 color: '#EF4444',
-                users: 8,
-                // Weekly retention based on observations (small sample)
-                data: [100, 50.0, 12.5, 0.0, 12.5]
+                users: 19,
+                // 19 users with 28+ days since signup (small sample)
+                data: [42.1, 15.8, 10.5, 5.3, 15.8]
             }
         ];
 
@@ -240,9 +224,10 @@
             .append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        // Scales
+        // Scales - extend to week 8 for longer products
+        const maxWeek = Math.max(...products.map(p => p.data.length - 1));
         const x = d3.scaleLinear()
-            .domain([0, 4])
+            .domain([0, maxWeek])
             .range([0, width]);
 
         const y = d3.scaleLinear()
@@ -263,7 +248,7 @@
         svg.append('g')
             .attr('transform', `translate(0,${chartHeight})`)
             .call(d3.axisBottom(x)
-                .ticks(5)
+                .ticks(maxWeek + 1)
                 .tickFormat(d => d === 0 ? 'Week 0' : `Week ${d}`))
             .selectAll('text')
             .style('font-size', '10px')
