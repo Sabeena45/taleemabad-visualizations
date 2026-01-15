@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Retention Analysis - Taleemabad</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            padding: 40px 50px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        .header p {
+            font-size: 0.85rem;
+            color: #999;
+        }
+        #chart {
+            width: 100%;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #555;
+        }
+        .legend-line {
+            width: 28px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        .legend-count {
+            font-size: 0.7rem;
+            color: #999;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(50, 50, 50, 0.95);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+            line-height: 1.6;
+        }
+        .axis-label {
+            font-size: 11px;
+            fill: #999;
+        }
+        .tick text {
+            font-size: 10px;
+            fill: #999;
+        }
+        .tick line {
+            stroke: #eee;
+        }
+        .domain {
+            stroke: #eee;
+        }
+        .grid-line {
+            stroke: #f0f0f0;
+            stroke-width: 1;
+        }
+        .grid-line-major {
+            stroke: #e0e0e0;
+            stroke-dasharray: 4,4;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        .summary-card {
+            text-align: center;
+            padding: 18px 12px;
+            background: #fafafa;
+            border-radius: 12px;
+            border-left: 4px solid;
+        }
+        .summary-card .value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        .summary-card .label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+        .summary-card .sublabel {
+            font-size: 0.65rem;
+            color: #bbb;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Weekly Retention by Product</h1>
+            <p>Taleemabad Platform Suite - All Products Compared</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-card" style="border-color: #3B82F6;">
+                <div class="value">52.9%</div>
+                <div class="label">NIETE</div>
+                <div class="sublabel">Week 4 retention</div>
+            </div>
+            <div class="summary-card" style="border-color: #10B981;">
+                <div class="value">21.3%</div>
+                <div class="label">Rumi</div>
+                <div class="sublabel">Week 4 retention</div>
+            </div>
+            <div class="summary-card" style="border-color: #F59E0B;">
+                <div class="value">11.2%</div>
+                <div class="label">SchoolPilot</div>
+                <div class="sublabel">Week 4 retention</div>
+            </div>
+            <div class="summary-card" style="border-color: #8B5CF6;">
+                <div class="value">45.5%</div>
+                <div class="label">Digital Coach</div>
+                <div class="sublabel">Week 4 retention</div>
+            </div>
+        </div>
+
+        <div id="chart"></div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-line" style="background: #3B82F6;"></div>
+                <span>NIETE</span>
+                <span class="legend-count">(2,490 users)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #10B981;"></div>
+                <span>Rumi</span>
+                <span class="legend-count">(939 users)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #F59E0B;"></div>
+                <span>SchoolPilot</span>
+                <span class="legend-count">(481 users)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #8B5CF6;"></div>
+                <span>Digital Coach</span>
+                <span class="legend-count">(11 users)</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Product retention data (weekly retention rates)
+        // Data derived from N-Day retention converted to weekly intervals
+        const products = [
+            {
+                name: 'NIETE',
+                color: '#3B82F6',
+                users: 2490,
+                // Weekly retention: Week 0=100%, interpolated from N-Day data
+                data: [100, 5.4, 21.6, 37.3, 52.9, 52.9, 52.9]
+            },
+            {
+                name: 'Rumi',
+                color: '#10B981',
+                users: 939,
+                // Actual weekly cohort retention averaged
+                data: [100, 18.0, 19.4, 15.8, 21.3, 9.5, 14.7]
+            },
+            {
+                name: 'SchoolPilot',
+                color: '#F59E0B',
+                users: 481,
+                // Weekly retention based on login activity
+                data: [100, 2.3, 5.4, 7.5, 11.2, 11.2, 11.2]
+            },
+            {
+                name: 'Digital Coach',
+                color: '#8B5CF6',
+                users: 11,
+                // Weekly retention based on observations
+                data: [100, 27.3, 36.4, 36.4, 45.5, 45.5, 45.5]
+            }
+        ];
+
+        // Chart dimensions
+        const margin = { top: 20, right: 30, bottom: 50, left: 55 };
+        const width = 900 - margin.left - margin.right;
+        const chartHeight = 380;
+
+        // Create SVG
+        const svg = d3.select('#chart')
+            .append('svg')
+            .attr('viewBox', `0 0 ${width + margin.left + margin.right} ${chartHeight + margin.top + margin.bottom}`)
+            .append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+
+        // Scales
+        const x = d3.scaleLinear()
+            .domain([0, 6])
+            .range([0, width]);
+
+        const y = d3.scaleLinear()
+            .domain([0, 100])
+            .range([chartHeight, 0]);
+
+        // Add horizontal grid lines
+        [25, 50, 75].forEach(val => {
+            svg.append('line')
+                .attr('class', 'grid-line-major')
+                .attr('x1', 0)
+                .attr('x2', width)
+                .attr('y1', y(val))
+                .attr('y2', y(val));
+        });
+
+        // X axis
+        svg.append('g')
+            .attr('transform', `translate(0,${chartHeight})`)
+            .call(d3.axisBottom(x)
+                .ticks(7)
+                .tickFormat(d => d === 0 ? 'Week 0' : `Week ${d}`))
+            .selectAll('text')
+            .style('font-size', '10px')
+            .style('fill', '#999');
+
+        // X axis label
+        svg.append('text')
+            .attr('x', width / 2)
+            .attr('y', chartHeight + 42)
+            .attr('text-anchor', 'middle')
+            .attr('class', 'axis-label')
+            .text('Weeks Since Signup');
+
+        // Y axis
+        svg.append('g')
+            .call(d3.axisLeft(y)
+                .tickValues([0, 25, 50, 75, 100])
+                .tickFormat(d => d + '%'))
+            .selectAll('text')
+            .style('font-size', '10px')
+            .style('fill', '#999');
+
+        // Y axis label
+        svg.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('y', -42)
+            .attr('x', -chartHeight / 2)
+            .attr('text-anchor', 'middle')
+            .attr('class', 'axis-label')
+            .text('Retention Rate (%)');
+
+        // Line generator with smooth curves
+        const line = d3.line()
+            .x((d, i) => x(i))
+            .y(d => y(d))
+            .curve(d3.curveMonotoneX);
+
+        // Tooltip
+        const tooltip = d3.select('body').append('div')
+            .attr('class', 'tooltip')
+            .style('opacity', 0);
+
+        // Draw lines for each product
+        products.forEach(product => {
+            // Draw the main line
+            svg.append('path')
+                .datum(product.data)
+                .attr('fill', 'none')
+                .attr('stroke', product.color)
+                .attr('stroke-width', 3)
+                .attr('stroke-linecap', 'round')
+                .attr('stroke-linejoin', 'round')
+                .attr('d', line)
+                .style('opacity', 0.85);
+
+            // Add dots at each data point
+            svg.selectAll(`.dot-${product.name}`)
+                .data(product.data)
+                .enter()
+                .append('circle')
+                .attr('cx', (d, i) => x(i))
+                .attr('cy', d => y(d))
+                .attr('r', 5)
+                .attr('fill', 'white')
+                .attr('stroke', product.color)
+                .attr('stroke-width', 2.5)
+                .style('cursor', 'pointer')
+                .on('mouseover', function(event, d) {
+                    const weekIdx = product.data.indexOf(d);
+                    d3.select(this).attr('r', 7);
+                    tooltip.transition().duration(200).style('opacity', 1);
+                    tooltip.html(`
+                        <strong style="color: ${product.color};">${product.name}</strong><br/>
+                        Week ${weekIdx}: <strong>${d}%</strong> retained<br/>
+                        <span style="color: #aaa;">Sample: ${product.users.toLocaleString()} users</span>
+                    `)
+                    .style('left', (event.pageX + 12) + 'px')
+                    .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', function() {
+                    d3.select(this).attr('r', 5);
+                    tooltip.transition().duration(300).style('opacity', 0);
+                });
+        });
+
+        // Add product labels at end of lines
+        products.forEach(product => {
+            const lastIdx = product.data.length - 1;
+            const lastValue = product.data[lastIdx];
+
+            svg.append('text')
+                .attr('x', x(lastIdx) + 10)
+                .attr('y', y(lastValue) + 4)
+                .attr('font-size', '11px')
+                .attr('font-weight', '500')
+                .attr('fill', product.color)
+                .text(product.name);
+        });
+    </script>
+</body>
+</html>
