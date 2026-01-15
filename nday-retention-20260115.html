@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N-Day Retention Analysis - Taleemabad Platform Suite</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+        .chart-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .product-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .product-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .product-card .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .product-card .description {
+            color: #666;
+            font-size: 0.8rem;
+            margin-bottom: 12px;
+        }
+        .product-card .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .metric {
+            text-align: center;
+            padding: 10px 5px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .metric .value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+        }
+        .metric .label {
+            font-size: 0.65rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+        .methodology {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .methodology h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .methodology p {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .methodology ul {
+            color: #666;
+            font-size: 0.9rem;
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        .axis-label {
+            font-size: 12px;
+            fill: #666;
+        }
+        .grid line {
+            stroke: #e0e0e0;
+            stroke-dasharray: 2,2;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 100;
+            max-width: 250px;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #333;
+        }
+        .legend-color {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        .data-note {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: #856404;
+        }
+        .data-note.info {
+            background: #e7f3ff;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        .comparison-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        .comparison-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+        }
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+        .highlight {
+            background: #d4edda !important;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>N-Day Retention Analysis</h1>
+            <p>Taleemabad Platform Suite - Industry-Standard Retention Metrics</p>
+            <p style="font-size: 0.9rem; margin-top: 5px;">Generated: January 15, 2026</p>
+        </div>
+
+        <div class="summary-grid">
+            <div class="product-card">
+                <h3><span class="color-dot" style="background: #3B82F6;"></span> NIETE</h3>
+                <div class="description">Teacher training - Lesson plans (Apr-Oct 2024)</div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="value">2,490</div>
+                        <div class="label">Users</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">52.9%</div>
+                        <div class="label">30-Day</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">21.6%</div>
+                        <div class="label">7-Day</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">5.4%</div>
+                        <div class="label">Day-1</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <h3><span class="color-dot" style="background: #10B981;"></span> Rumi</h3>
+                <div class="description">WhatsApp AI coaching (Nov 2025+)</div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="value">939</div>
+                        <div class="label">Users</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">40.4%</div>
+                        <div class="label">30-Day</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">23.9%</div>
+                        <div class="label">7-Day</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">13.1%</div>
+                        <div class="label">Day-1</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <h3><span class="color-dot" style="background: #F59E0B;"></span> SchoolPilot</h3>
+                <div class="description">Compliance management (Sep 2025+)</div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="value">481</div>
+                        <div class="label">Users</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">11.2%</div>
+                        <div class="label">30-Day</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">5.4%</div>
+                        <div class="label">7-Day</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">2.3%</div>
+                        <div class="label">Day-1</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <h3><span class="color-dot" style="background: #8B5CF6;"></span> Digital Coach</h3>
+                <div class="description">FICO observations - Pilot (Nov 2025+)</div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="value">11</div>
+                        <div class="label">Users</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">45.5%</div>
+                        <div class="label">30-Day</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">36.4%</div>
+                        <div class="label">7-Day</div>
+                    </div>
+                    <div class="metric">
+                        <div class="value">27.3%</div>
+                        <div class="label">Day-1</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">N-Day Retention Comparison (All 4 Products)</div>
+            <div id="barChart"></div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3B82F6;"></div>
+                    <span>NIETE (2,490)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #10B981;"></div>
+                    <span>Rumi (939)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #F59E0B;"></div>
+                    <span>SchoolPilot (481)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #8B5CF6;"></div>
+                    <span>Digital Coach (11)</span>
+                </div>
+            </div>
+
+            <div class="data-note info" style="margin-top: 25px;">
+                <strong>Reading this chart:</strong> Higher bars = better retention. Day-1 shows immediate re-engagement,
+                Day-7/14/30 show cumulative return rates. NIETE shows strong long-term retention (53% at 30 days)
+                despite low Day-1 (5%), suggesting periodic rather than daily usage patterns.
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Detailed Comparison Table</div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Users</th>
+                        <th>Day-0</th>
+                        <th>Day-1</th>
+                        <th>Day-7</th>
+                        <th>Day-14</th>
+                        <th>Day-30</th>
+                        <th>Activity Metric</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span style="color: #3B82F6;">&#9679;</span> NIETE</td>
+                        <td>2,490</td>
+                        <td>2.3%</td>
+                        <td>5.4%</td>
+                        <td>21.6%</td>
+                        <td>37.3%</td>
+                        <td class="highlight">52.9%</td>
+                        <td>Lesson plan sessions</td>
+                    </tr>
+                    <tr>
+                        <td><span style="color: #10B981;">&#9679;</span> Rumi</td>
+                        <td>939</td>
+                        <td>99.1%</td>
+                        <td>13.1%</td>
+                        <td>23.9%</td>
+                        <td>28.0%</td>
+                        <td>40.4%</td>
+                        <td>WhatsApp chat sessions</td>
+                    </tr>
+                    <tr>
+                        <td><span style="color: #F59E0B;">&#9679;</span> SchoolPilot</td>
+                        <td>481</td>
+                        <td>7.5%</td>
+                        <td>2.3%</td>
+                        <td>5.4%</td>
+                        <td>7.5%</td>
+                        <td>11.2%</td>
+                        <td>Login activity</td>
+                    </tr>
+                    <tr>
+                        <td><span style="color: #8B5CF6;">&#9679;</span> Digital Coach</td>
+                        <td>11</td>
+                        <td>100%</td>
+                        <td class="highlight">27.3%</td>
+                        <td class="highlight">36.4%</td>
+                        <td class="highlight">36.4%</td>
+                        <td>45.5%</td>
+                        <td>Classroom observations</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="data-note" style="margin-top: 20px;">
+                <strong>Note on sample sizes:</strong> Digital Coach has only 11 users (pilot phase) - its high retention rates
+                should be interpreted cautiously. SchoolPilot's low retention reflects its use case as a compliance tool
+                (periodic logins for administrative tasks rather than daily engagement).
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Rumi: 7-Day Retention by Signup Week</div>
+            <div id="weeklyChart"></div>
+            <div class="data-note">
+                <strong>Cohort Analysis:</strong> Early adopters (Nov 9-16) show 56-57% 7-day retention,
+                while mass signup cohorts (Nov 24, Dec 8, Dec 15) show lower rates (14-28%).
+                This suggests early adopters were more motivated users, or that onboarding
+                quality degraded during rapid scaling periods.
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="methodology">
+                <h4>Methodology: N-Day Retention</h4>
+                <p>This analysis uses the <strong>industry-standard N-Day retention metric</strong>:</p>
+                <ul>
+                    <li><strong>Day-0 Retention:</strong> % of users active on their signup day</li>
+                    <li><strong>Day-1 Retention:</strong> % of users who returned exactly 1 day after signup</li>
+                    <li><strong>7-Day Retention:</strong> % of users who returned at least once within days 1-7 after signup</li>
+                    <li><strong>14-Day Retention:</strong> % of users who returned at least once within days 1-14 after signup</li>
+                    <li><strong>30-Day Retention:</strong> % of users who returned at least once within days 1-30 after signup</li>
+                </ul>
+
+                <h4 style="margin-top: 20px;">Data Sources & Limitations</h4>
+                <ul>
+                    <li><strong>NIETE (BigQuery):</strong> Activity data only through Nov 2024; analysis limited to Apr-Oct 2024 cohorts</li>
+                    <li><strong>Rumi (Supabase):</strong> Chat session activity from Nov 2025+; 939 users analyzed</li>
+                    <li><strong>SchoolPilot (Neon):</strong> Login timestamps from Sep 2025+; 481 users, 224 never logged in</li>
+                    <li><strong>Digital Coach (Neon):</strong> Observation timestamps from Nov 2025+; only 11 active users (pilot)</li>
+                </ul>
+
+                <h4 style="margin-top: 20px;">Key Insights</h4>
+                <ul>
+                    <li><strong>NIETE:</strong> Strong long-term retention (53% at 30d) despite low Day-1 - teachers use lesson plans periodically, not daily</li>
+                    <li><strong>Rumi:</strong> Better immediate engagement (13% Day-1) as WhatsApp is more accessible; 40% return within 30 days</li>
+                    <li><strong>SchoolPilot:</strong> Low retention expected for compliance tools - users login when required, not habitually</li>
+                    <li><strong>Digital Coach:</strong> Small pilot showing promise, but sample size too small for conclusions</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data for all 4 products
+        const retentionData = [
+            { product: 'NIETE', day0: 2.3, day1: 5.4, day7: 21.6, day14: 37.3, day30: 52.9, users: 2490, color: '#3B82F6' },
+            { product: 'Rumi', day0: 99.1, day1: 13.1, day7: 23.9, day14: 28.0, day30: 40.4, users: 939, color: '#10B981' },
+            { product: 'SchoolPilot', day0: 7.5, day1: 2.3, day7: 5.4, day14: 7.5, day30: 11.2, users: 481, color: '#F59E0B' },
+            { product: 'Digital Coach', day0: 100, day1: 27.3, day7: 36.4, day14: 36.4, day30: 45.5, users: 11, color: '#8B5CF6' }
+        ];
+
+        const rumiWeeklyData = [
+            { week: 'Nov 3', cohortSize: 19, retention: 31.6 },
+            { week: 'Nov 10', cohortSize: 79, retention: 57.0 },
+            { week: 'Nov 17', cohortSize: 25, retention: 56.0 },
+            { week: 'Nov 24', cohortSize: 164, retention: 28.0 },
+            { week: 'Dec 1', cohortSize: 84, retention: 17.9 },
+            { week: 'Dec 8', cohortSize: 172, retention: 14.0 },
+            { week: 'Dec 15', cohortSize: 164, retention: 27.4 },
+            { week: 'Dec 22', cohortSize: 19, retention: 21.1 },
+            { week: 'Dec 29', cohortSize: 10, retention: 10.0 },
+            { week: 'Jan 5', cohortSize: 29, retention: 20.7 }
+        ];
+
+        // Bar Chart - N-Day Retention Comparison
+        const barMargin = { top: 40, right: 30, bottom: 60, left: 60 };
+        const barWidth = 900 - barMargin.left - barMargin.right;
+        const barHeight = 400 - barMargin.top - barMargin.bottom;
+
+        const barSvg = d3.select('#barChart')
+            .append('svg')
+            .attr('viewBox', `0 0 ${barWidth + barMargin.left + barMargin.right} ${barHeight + barMargin.top + barMargin.bottom}`)
+            .append('g')
+            .attr('transform', `translate(${barMargin.left},${barMargin.top})`);
+
+        const metrics = ['day1', 'day7', 'day14', 'day30'];
+        const metricLabels = { day1: 'Day 1', day7: 'Day 7', day14: 'Day 14', day30: 'Day 30' };
+
+        const x0 = d3.scaleBand()
+            .domain(metrics)
+            .range([0, barWidth])
+            .padding(0.3);
+
+        const x1 = d3.scaleBand()
+            .domain(retentionData.map(d => d.product))
+            .range([0, x0.bandwidth()])
+            .padding(0.08);
+
+        const y = d3.scaleLinear()
+            .domain([0, 60])
+            .range([barHeight, 0]);
+
+        // Grid
+        barSvg.append('g')
+            .attr('class', 'grid')
+            .call(d3.axisLeft(y).tickSize(-barWidth).tickFormat(''));
+
+        // X axis
+        barSvg.append('g')
+            .attr('transform', `translate(0,${barHeight})`)
+            .call(d3.axisBottom(x0).tickFormat(d => metricLabels[d]))
+            .selectAll('text')
+            .style('font-size', '14px');
+
+        // Y axis
+        barSvg.append('g')
+            .call(d3.axisLeft(y).tickFormat(d => d + '%'))
+            .selectAll('text')
+            .style('font-size', '12px');
+
+        // Y axis label
+        barSvg.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('y', -45)
+            .attr('x', -barHeight / 2)
+            .attr('text-anchor', 'middle')
+            .attr('class', 'axis-label')
+            .text('Retention Rate (%)');
+
+        // Bars
+        const tooltip = d3.select('body').append('div').attr('class', 'tooltip').style('opacity', 0);
+
+        metrics.forEach(metric => {
+            barSvg.selectAll(`.bar-${metric}`)
+                .data(retentionData)
+                .enter()
+                .append('rect')
+                .attr('x', d => x0(metric) + x1(d.product))
+                .attr('y', d => y(d[metric]))
+                .attr('width', x1.bandwidth())
+                .attr('height', d => barHeight - y(d[metric]))
+                .attr('fill', d => d.color)
+                .attr('rx', 3)
+                .on('mouseover', function(event, d) {
+                    tooltip.transition().duration(200).style('opacity', 1);
+                    tooltip.html(`
+                        <strong>${d.product}</strong><br/>
+                        ${metricLabels[metric]} Retention: ${d[metric]}%<br/>
+                        Sample: ${d.users.toLocaleString()} users
+                    `)
+                    .style('left', (event.pageX + 10) + 'px')
+                    .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.transition().duration(500).style('opacity', 0);
+                });
+
+            // Value labels on top of bars
+            barSvg.selectAll(`.label-${metric}`)
+                .data(retentionData)
+                .enter()
+                .append('text')
+                .attr('x', d => x0(metric) + x1(d.product) + x1.bandwidth() / 2)
+                .attr('y', d => y(d[metric]) - 4)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '9px')
+                .attr('fill', '#333')
+                .text(d => d[metric] + '%');
+        });
+
+        // Weekly Rumi Chart
+        const weeklyMargin = { top: 40, right: 80, bottom: 60, left: 60 };
+        const weeklyWidth = 900 - weeklyMargin.left - weeklyMargin.right;
+        const weeklyHeight = 350 - weeklyMargin.top - weeklyMargin.bottom;
+
+        const weeklySvg = d3.select('#weeklyChart')
+            .append('svg')
+            .attr('viewBox', `0 0 ${weeklyWidth + weeklyMargin.left + weeklyMargin.right} ${weeklyHeight + weeklyMargin.top + weeklyMargin.bottom}`)
+            .append('g')
+            .attr('transform', `translate(${weeklyMargin.left},${weeklyMargin.top})`);
+
+        const xWeekly = d3.scaleBand()
+            .domain(rumiWeeklyData.map(d => d.week))
+            .range([0, weeklyWidth])
+            .padding(0.2);
+
+        const yWeekly = d3.scaleLinear()
+            .domain([0, 70])
+            .range([weeklyHeight, 0]);
+
+        // Grid
+        weeklySvg.append('g')
+            .attr('class', 'grid')
+            .call(d3.axisLeft(yWeekly).tickSize(-weeklyWidth).tickFormat(''));
+
+        // X axis
+        weeklySvg.append('g')
+            .attr('transform', `translate(0,${weeklyHeight})`)
+            .call(d3.axisBottom(xWeekly))
+            .selectAll('text')
+            .attr('transform', 'rotate(-45)')
+            .style('text-anchor', 'end')
+            .style('font-size', '11px');
+
+        // X axis label
+        weeklySvg.append('text')
+            .attr('x', weeklyWidth / 2)
+            .attr('y', weeklyHeight + 55)
+            .attr('text-anchor', 'middle')
+            .attr('class', 'axis-label')
+            .text('Signup Week (2025-2026)');
+
+        // Y axis
+        weeklySvg.append('g')
+            .call(d3.axisLeft(yWeekly).tickFormat(d => d + '%'));
+
+        // Y axis label
+        weeklySvg.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('y', -45)
+            .attr('x', -weeklyHeight / 2)
+            .attr('text-anchor', 'middle')
+            .attr('class', 'axis-label')
+            .text('7-Day Retention Rate (%)');
+
+        // Bars
+        weeklySvg.selectAll('.weekly-bar')
+            .data(rumiWeeklyData)
+            .enter()
+            .append('rect')
+            .attr('x', d => xWeekly(d.week))
+            .attr('y', d => yWeekly(d.retention))
+            .attr('width', xWeekly.bandwidth())
+            .attr('height', d => weeklyHeight - yWeekly(d.retention))
+            .attr('fill', '#10B981')
+            .attr('rx', 4)
+            .on('mouseover', function(event, d) {
+                tooltip.transition().duration(200).style('opacity', 1);
+                tooltip.html(`
+                    <strong>Week of ${d.week}</strong><br/>
+                    Cohort Size: ${d.cohortSize} users<br/>
+                    7-Day Retention: ${d.retention}%
+                `)
+                .style('left', (event.pageX + 10) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+            })
+            .on('mouseout', function() {
+                tooltip.transition().duration(500).style('opacity', 0);
+            });
+
+        // Cohort size labels on top
+        weeklySvg.selectAll('.cohort-label')
+            .data(rumiWeeklyData)
+            .enter()
+            .append('text')
+            .attr('x', d => xWeekly(d.week) + xWeekly.bandwidth() / 2)
+            .attr('y', d => yWeekly(d.retention) - 5)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '9px')
+            .attr('fill', '#666')
+            .text(d => `n=${d.cohortSize}`);
+
+        // Average line
+        const avgRetention = d3.mean(rumiWeeklyData, d => d.retention);
+        weeklySvg.append('line')
+            .attr('x1', 0)
+            .attr('x2', weeklyWidth)
+            .attr('y1', yWeekly(avgRetention))
+            .attr('y2', yWeekly(avgRetention))
+            .attr('stroke', '#EF4444')
+            .attr('stroke-width', 2)
+            .attr('stroke-dasharray', '5,5');
+
+        weeklySvg.append('text')
+            .attr('x', weeklyWidth + 5)
+            .attr('y', yWeekly(avgRetention) + 4)
+            .attr('font-size', '11px')
+            .attr('fill', '#EF4444')
+            .text(`Avg: ${avgRetention.toFixed(1)}%`);
+    </script>
+</body>
+</html>
