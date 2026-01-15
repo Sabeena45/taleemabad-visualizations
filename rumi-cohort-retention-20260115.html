@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rumi Weekly Cohort Retention</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            padding: 40px 50px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        .header p {
+            font-size: 0.85rem;
+            color: #999;
+        }
+        #chart {
+            width: 100%;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            color: #666;
+        }
+        .legend-line {
+            width: 24px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(50, 50, 50, 0.95);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+            line-height: 1.5;
+        }
+        .axis-label {
+            font-size: 11px;
+            fill: #999;
+        }
+        .tick text {
+            font-size: 10px;
+            fill: #999;
+        }
+        .tick line {
+            stroke: #eee;
+        }
+        .domain {
+            stroke: #eee;
+        }
+        .grid-line {
+            stroke: #f5f5f5;
+            stroke-width: 1;
+        }
+        .grid-line-25 {
+            stroke: #e8e8e8;
+            stroke-dasharray: 4,4;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        .summary-card {
+            text-align: center;
+            padding: 16px 12px;
+            background: #fafafa;
+            border-radius: 10px;
+        }
+        .summary-card .value {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #333;
+        }
+        .summary-card .label {
+            font-size: 0.7rem;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Rumi Weekly Cohort Retention</h1>
+            <p>Signup Cohorts: Nov 2025 - Jan 2026</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <div class="value">975</div>
+                <div class="label">Total Users</div>
+            </div>
+            <div class="summary-card">
+                <div class="value">11</div>
+                <div class="label">Cohorts</div>
+            </div>
+            <div class="summary-card">
+                <div class="value">97%</div>
+                <div class="label">Week 0 Avg</div>
+            </div>
+            <div class="summary-card">
+                <div class="value">18%</div>
+                <div class="label">Week 1 Avg</div>
+            </div>
+        </div>
+
+        <div id="chart"></div>
+
+        <div class="legend" id="legend"></div>
+    </div>
+
+    <script>
+        // Real cohort data from Rumi database
+        const cohortData = [
+            { cohort: 'Nov 03', size: 19, data: [84.2, 31.6, 26.3, 31.6, 26.3, 15.8, 26.3, 47.4, 31.6] },
+            { cohort: 'Nov 10', size: 79, data: [96.2, 36.7, 25.3, 6.3, 12.7, 3.8, 19.0, 2.5, 17.7] },
+            { cohort: 'Nov 17', size: 25, data: [100, 52.0, 36.0, 8.0, 16.0, 16.0, 4.0, 8.0, 4.0] },
+            { cohort: 'Nov 24', size: 164, data: [100, 17.1, 20.1, 9.1, 21.3, 4.3, 20.7, 4.3] },
+            { cohort: 'Dec 01', size: 84, data: [100, 4.8, 4.8, 29.8, 2.4, 13.1, 3.6] },
+            { cohort: 'Dec 08', size: 172, data: [100, 16.9, 29.7, 5.8, 20.3, 5.2] },
+            { cohort: 'Dec 15', size: 164, data: [99.4, 19.5, 7.9, 20.1, 3.7] },
+            { cohort: 'Dec 22', size: 19, data: [100, 10.5, 5.3] },
+            { cohort: 'Dec 29', size: 10, data: [100, 10.0] },
+            { cohort: 'Jan 05', size: 40, data: [100, 7.5] },
+            { cohort: 'Jan 12', size: 199, data: [99.5] }
+        ];
+
+        // Color palette - soft, muted colors
+        const colors = [
+            '#5B8DEF',  // Blue
+            '#F5A623',  // Orange
+            '#7B68EE',  // Purple
+            '#50C878',  // Green
+            '#FF6B6B',  // Red
+            '#4ECDC4',  // Teal
+            '#95A5A6',  // Gray
+            '#D4A574',  // Tan
+            '#9B59B6',  // Violet
+            '#3498DB',  // Light blue
+            '#E74C3C'   // Coral
+        ];
+
+        // Chart dimensions
+        const margin = { top: 20, right: 30, bottom: 50, left: 50 };
+        const width = 900 - margin.left - margin.right;
+        const height = 420 - margin.top - margin.bottom;
+
+        // Create SVG
+        const svg = d3.select('#chart')
+            .append('svg')
+            .attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+            .append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+
+        // Find max weeks
+        const maxWeeks = Math.max(...cohortData.map(c => c.data.length - 1));
+
+        // Scales
+        const x = d3.scaleLinear()
+            .domain([0, maxWeeks])
+            .range([0, width]);
+
+        const y = d3.scaleLinear()
+            .domain([0, 100])
+            .range([height, 0]);
+
+        // Add horizontal grid lines
+        [25, 50, 75].forEach(val => {
+            svg.append('line')
+                .attr('class', 'grid-line-25')
+                .attr('x1', 0)
+                .attr('x2', width)
+                .attr('y1', y(val))
+                .attr('y2', y(val));
+        });
+
+        // X axis
+        svg.append('g')
+            .attr('transform', `translate(0,${height})`)
+            .call(d3.axisBottom(x)
+                .ticks(maxWeeks + 1)
+                .tickFormat(d => d === 0 ? 'Week 0\n(100%)' : `Week ${d}`))
+            .selectAll('text')
+            .style('font-size', '10px')
+            .style('fill', '#999');
+
+        // X axis label
+        svg.append('text')
+            .attr('x', width / 2)
+            .attr('y', height + 42)
+            .attr('text-anchor', 'middle')
+            .attr('class', 'axis-label')
+            .text('Weeks Since Signup');
+
+        // Y axis
+        svg.append('g')
+            .call(d3.axisLeft(y)
+                .tickValues([0, 25, 50, 75, 100])
+                .tickFormat(d => d + '%'))
+            .selectAll('text')
+            .style('font-size', '10px')
+            .style('fill', '#999');
+
+        // Y axis label
+        svg.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('y', -38)
+            .attr('x', -height / 2)
+            .attr('text-anchor', 'middle')
+            .attr('class', 'axis-label')
+            .text('Retention Rate (%)');
+
+        // Line generator with smooth curves
+        const line = d3.line()
+            .x((d, i) => x(i))
+            .y(d => y(d))
+            .curve(d3.curveMonotoneX);
+
+        // Tooltip
+        const tooltip = d3.select('body').append('div')
+            .attr('class', 'tooltip')
+            .style('opacity', 0);
+
+        // Draw lines for each cohort
+        cohortData.forEach((cohort, idx) => {
+            const color = colors[idx % colors.length];
+
+            // Only draw cohorts with at least 2 data points
+            if (cohort.data.length >= 2) {
+                // Draw the line
+                svg.append('path')
+                    .datum(cohort.data)
+                    .attr('fill', 'none')
+                    .attr('stroke', color)
+                    .attr('stroke-width', 2.5)
+                    .attr('stroke-linecap', 'round')
+                    .attr('stroke-linejoin', 'round')
+                    .attr('d', line)
+                    .style('opacity', 0.75);
+
+                // Add invisible hover circles
+                svg.selectAll(`.hover-${idx}`)
+                    .data(cohort.data)
+                    .enter()
+                    .append('circle')
+                    .attr('cx', (d, i) => x(i))
+                    .attr('cy', d => y(d))
+                    .attr('r', 6)
+                    .attr('fill', 'transparent')
+                    .style('cursor', 'pointer')
+                    .on('mouseover', function(event, d) {
+                        const weekIdx = cohort.data.indexOf(d);
+                        d3.select(this).attr('fill', color).attr('r', 5);
+                        tooltip.transition().duration(200).style('opacity', 1);
+                        tooltip.html(`
+                            <strong>${cohort.cohort}</strong> (n=${cohort.size})<br/>
+                            Week ${weekIdx}: <strong>${d}%</strong> retained
+                        `)
+                        .style('left', (event.pageX + 12) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                    })
+                    .on('mouseout', function() {
+                        d3.select(this).attr('fill', 'transparent').attr('r', 6);
+                        tooltip.transition().duration(300).style('opacity', 0);
+                    });
+            }
+        });
+
+        // Build legend
+        const legend = d3.select('#legend');
+        cohortData.forEach((cohort, idx) => {
+            if (cohort.data.length >= 2) {
+                const item = legend.append('div')
+                    .attr('class', 'legend-item');
+
+                item.append('div')
+                    .attr('class', 'legend-line')
+                    .style('background', colors[idx % colors.length]);
+
+                item.append('span')
+                    .text(`${cohort.cohort} (n=${cohort.size})`);
+            }
+        });
+    </script>
+</body>
+</html>
