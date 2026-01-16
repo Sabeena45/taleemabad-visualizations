@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rumi vs Digital Coach - Comparative Analysis</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .presentation {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .slide.prev {
+            transform: translateX(-100%);
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #00d4ff;
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #a0a0a0;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 500px;
+            margin: 20px auto;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            max-width: 1000px;
+            margin: 30px auto;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-card.rumi {
+            border-left: 4px solid #00d4ff;
+        }
+
+        .metric-card.digital-coach {
+            border-left: 4px solid #7b2cbf;
+        }
+
+        .metric-value {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .metric-card.rumi .metric-value {
+            color: #00d4ff;
+        }
+
+        .metric-card.digital-coach .metric-value {
+            color: #7b2cbf;
+        }
+
+        .metric-label {
+            font-size: 1.2rem;
+            color: #a0a0a0;
+        }
+
+        .insight-box {
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px 40px;
+            margin-top: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            max-width: 900px;
+        }
+
+        .insight-box p {
+            font-size: 1.3rem;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+        }
+
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.rumi {
+            background: #00d4ff;
+        }
+
+        .legend-dot.digital-coach {
+            background: #7b2cbf;
+        }
+
+        .nav-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .slide-counter {
+            position: fixed;
+            bottom: 30px;
+            right: 40px;
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            transition: width 0.3s ease;
+        }
+
+        /* Tooltip styles */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 1000;
+        }
+
+        /* Bar chart styles */
+        .bar {
+            transition: opacity 0.2s;
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+        }
+
+        /* Donut chart styles */
+        .arc path {
+            transition: transform 0.2s;
+        }
+
+        .arc:hover path {
+            transform: scale(1.05);
+        }
+
+        /* Comparison table */
+        .comparison-table {
+            width: 100%;
+            max-width: 900px;
+            border-collapse: collapse;
+            margin: 30px auto;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .comparison-table th {
+            font-weight: 600;
+            color: #a0a0a0;
+            font-size: 1rem;
+        }
+
+        .comparison-table td {
+            font-size: 1.1rem;
+        }
+
+        .comparison-table td:nth-child(2) {
+            color: #00d4ff;
+        }
+
+        .comparison-table td:nth-child(3) {
+            color: #7b2cbf;
+        }
+
+        .stat-highlight {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 5px;
+        }
+
+        .recommendation-list {
+            max-width: 800px;
+            margin: 30px auto;
+            text-align: left;
+        }
+
+        .recommendation-list li {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            padding-left: 30px;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .recommendation-list li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #00d4ff;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="presentation">
+        <!-- Slide 1: Title -->
+        <div class="slide active" id="slide1">
+            <h1>Rumi vs Digital Coach</h1>
+            <p class="subtitle">Comparative Analysis of Taleemabad's Classroom Observation Tools</p>
+            <div class="metrics-grid" style="margin-top: 50px;">
+                <div class="metric-card rumi animate-in delay-1">
+                    <div class="metric-value">127</div>
+                    <div class="metric-label">Rumi Sessions</div>
+                </div>
+                <div class="metric-card digital-coach animate-in delay-2">
+                    <div class="metric-value">70</div>
+                    <div class="metric-label">Digital Coach Observations</div>
+                </div>
+            </div>
+            <p class="subtitle" style="margin-top: 40px; font-size: 1.1rem;">November 2025 - January 2026</p>
+        </div>
+
+        <!-- Slide 2: Scale Comparison -->
+        <div class="slide" id="slide2">
+            <h2>Scale Comparison</h2>
+            <div class="chart-container" id="scaleChart"></div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot rumi"></div> Rumi</div>
+                <div class="legend-item"><div class="legend-dot digital-coach"></div> Digital Coach</div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Usage Pattern -->
+        <div class="slide" id="slide3">
+            <h2>Usage Pattern: Repeat vs One-Time</h2>
+            <div class="metrics-grid">
+                <div class="metric-card rumi">
+                    <div class="metric-value">3.3×</div>
+                    <div class="metric-label">Avg sessions per teacher</div>
+                    <p style="margin-top: 15px; color: #888; font-size: 1rem;">38 teachers, 127 sessions</p>
+                </div>
+                <div class="metric-card digital-coach">
+                    <div class="metric-value">1.0×</div>
+                    <div class="metric-label">Avg observations per teacher</div>
+                    <p style="margin-top: 15px; color: #888; font-size: 1rem;">69 teachers, 70 observations</p>
+                </div>
+            </div>
+            <div class="insight-box">
+                <p><strong>Key Insight:</strong> Rumi builds a dedicated user base with repeat usage, while Digital Coach reaches more unique teachers for one-time assessments.</p>
+            </div>
+        </div>
+
+        <!-- Slide 4: Weekly Trend -->
+        <div class="slide" id="slide4">
+            <h2>Weekly Activity Trend</h2>
+            <div class="chart-container" id="weeklyChart"></div>
+            <div class="insight-box">
+                <p><strong>November Peak → December Crash:</strong> Both platforms show dramatic decline after initial launch period. Rumi peaked at 70 sessions (Nov 17), Digital Coach at 34 (Nov 24).</p>
+            </div>
+        </div>
+
+        <!-- Slide 5: Time of Day -->
+        <div class="slide" id="slide5">
+            <h2>When Teachers Use Each Tool</h2>
+            <div class="chart-container" id="hourChart"></div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot rumi"></div> Rumi (distributed, includes night)</div>
+                <div class="legend-item"><div class="legend-dot digital-coach"></div> Digital Coach (school hours only)</div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Time Insight -->
+        <div class="slide" id="slide6">
+            <h2>Critical Time Pattern Discovery</h2>
+            <div class="metrics-grid">
+                <div class="metric-card rumi">
+                    <div class="metric-value">37.8%</div>
+                    <div class="metric-label">Rumi usage at 12AM-4AM</div>
+                    <p style="margin-top: 15px; color: #888; font-size: 1rem;">Teachers uploading recordings after school hours</p>
+                </div>
+                <div class="metric-card digital-coach">
+                    <div class="metric-value">100%</div>
+                    <div class="metric-label">During school hours (9AM-5PM)</div>
+                    <p style="margin-top: 15px; color: #888; font-size: 1rem;">Real-time classroom observations</p>
+                </div>
+            </div>
+            <div class="insight-box">
+                <p><strong>Workflow Difference:</strong> Rumi is asynchronous (record → upload later), Digital Coach is synchronous (observe in real-time).</p>
+            </div>
+        </div>
+
+        <!-- Slide 7: Day of Week -->
+        <div class="slide" id="slide7">
+            <h2>Day of Week Distribution</h2>
+            <div class="chart-container" id="dayChart"></div>
+            <div class="insight-box">
+                <p><strong>Thursday is King:</strong> Both platforms peak on Thursday (28% Rumi, 56% Digital Coach). Zero weekend usage for Digital Coach.</p>
+            </div>
+        </div>
+
+        <!-- Slide 8: Teaching Metrics -->
+        <div class="slide" id="slide8">
+            <h2>Classroom Teaching Metrics</h2>
+            <div class="chart-container" id="metricsChart"></div>
+            <div class="insight-box">
+                <p><strong>Student Participation Crisis:</strong> Only 9.5% student talk time. Teachers dominate with 85-90% of classroom discourse.</p>
+            </div>
+        </div>
+
+        <!-- Slide 9: Completion Rates -->
+        <div class="slide" id="slide9">
+            <h2>Platform Reliability</h2>
+            <div class="chart-container" id="completionChart"></div>
+            <div class="insight-box">
+                <p><strong>Rumi's 24.4% failure rate</strong> needs investigation - likely audio processing or connectivity issues. Digital Coach achieves 100% completion.</p>
+            </div>
+        </div>
+
+        <!-- Slide 10: Recommendations -->
+        <div class="slide" id="slide10">
+            <h2>Key Recommendations</h2>
+            <ul class="recommendation-list">
+                <li><strong>Address Usage Decline:</strong> Both platforms crashed after November - need engagement strategy</li>
+                <li><strong>Improve Rumi Reliability:</strong> 24.4% failure rate is too high for production</li>
+                <li><strong>Leverage Thursday:</strong> Schedule training and support on peak usage days</li>
+                <li><strong>Focus on Student Participation:</strong> 9.5% student talk time needs targeted coaching intervention</li>
+                <li><strong>Unify Teacher Data:</strong> Rumi should capture teacher names for cross-platform analysis</li>
+            </ul>
+        </div>
+
+
+        <!-- Slide 11: Behavioral Science - User Journey -->
+        <div class="slide" id="slide15">
+            <h2>🧠 Behavioral Science Analysis</h2>
+            <p class="subtitle">Applying Fogg Behavior Model + Habit Formation Theory</p>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>Rumi: "Repeat User" Pattern</h3>
+                    <div id="rumi-journey-chart" style="width: 100%; height: 300px;"></div>
+                    <p style="text-align: center; color: #a0a0a0; margin-top: 10px;">
+                        57% return after first success<br>
+                        Session 3 = Critical "Valley of Death" (32% failure)
+                    </p>
+                </div>
+
+                <div class="metric-card">
+                    <h3>Digital Coach: "One-and-Done" Pattern</h3>
+                    <div id="dc-journey-chart" style="width: 100%; height: 300px;"></div>
+                    <p style="text-align: center; color: #a0a0a0; margin-top: 10px;">
+                        98.6% use exactly once<br>
+                        Teachers are observed, not self-directed
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Fogg Behavior Model Analysis -->
+        <div class="slide" id="slide12">
+            <h2>Fogg Behavior Model: B = M × A × P</h2>
+            <p class="subtitle">Behavior = Motivation × Ability × Prompt</p>
+
+            <table class="comparison-table" style="max-width: 1200px; margin: 0 auto;">
+                <tr>
+                    <th>Factor</th>
+                    <th>Rumi</th>
+                    <th>Digital Coach</th>
+                </tr>
+                <tr>
+                    <td><strong>Motivation</strong></td>
+                    <td style="background: rgba(255, 183, 77, 0.2);">🟡 Medium<br>66% return, but 34% never come back</td>
+                    <td style="background: rgba(239, 68, 68, 0.2);">🔴 Very Low<br>99% one-time usage (no intrinsic motivation)</td>
+                </tr>
+                <tr>
+                    <td><strong>Ability</strong></td>
+                    <td style="background: rgba(239, 68, 68, 0.2);">🔴 Low-Medium<br>25% failure, 8.7hr processing time</td>
+                    <td style="background: rgba(16, 185, 129, 0.2);">🟢 High<br>100% completion, zero tech failures</td>
+                </tr>
+                <tr>
+                    <td><strong>Prompt</strong></td>
+                    <td style="background: rgba(16, 185, 129, 0.2);">🟢 High<br>WhatsApp integration (daily-use platform)</td>
+                    <td style="background: rgba(239, 68, 68, 0.2);">🔴 Very Low<br>No recurring prompts for teachers</td>
+                </tr>
+                <tr style="background: rgba(255, 255, 255, 0.05);">
+                    <td><strong>Diagnosis</strong></td>
+                    <td>✅ Prompt works<br>⚠️ Ability is bottleneck</td>
+                    <td>❌ Wrong user empowered<br>❌ Missing reward signal</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Slide 13: Habit Formation Analysis -->
+        <div class="slide" id="slide13">
+            <h2>Habit Formation: Cue → Routine → Reward</h2>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>Rumi: Emerging Habits (Small Subset)</h3>
+                    <div id="habit-loop-rumi" style="width: 100%; height: 250px;"></div>
+                    <ul style="text-align: left; margin-top: 20px; font-size: 1rem;">
+                        <li><strong>Cue:</strong> WhatsApp notification (🟡 Medium)</li>
+                        <li><strong>Routine:</strong> Record → Upload → Wait 8.7hrs (🔴 Low - friction-heavy)</li>
+                        <li><strong>Reward:</strong> Coaching score 73.8% (🟡 Medium)</li>
+                        <li><strong>Result:</strong> Only 17/38 users (45%) form habit (4+ sessions)</li>
+                    </ul>
+                </div>
+
+                <div class="metric-card">
+                    <h3>Digital Coach: No Habit Formation</h3>
+                    <div id="habit-loop-dc" style="width: 100%; height: 250px;"></div>
+                    <ul style="text-align: left; margin-top: 20px; font-size: 1rem;">
+                        <li><strong>Cue:</strong> External observer schedules (🔴 External only)</li>
+                        <li><strong>Routine:</strong> Teacher is observed (passive) (🔴 Not self-initiated)</li>
+                        <li><strong>Reward:</strong> Unknown - no feedback to teachers (❌ Missing)</li>
+                        <li><strong>Result:</strong> 99% one-time usage - ZERO habit formation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Behavioral Science Recommendations -->
+        <div class="slide" id="slide14">
+            <h2>💡 Behavioral Science Recommendations</h2>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3 style="color: #00d4ff;">Rumi: Reduce Friction</h3>
+                    <ul style="text-align: left; margin-top: 20px; font-size: 0.95rem; line-height: 1.8;">
+                        <li><strong>🎯 Address "Session 3 Valley of Death"</strong><br>
+                        → Proactive WhatsApp check-in before Session 3<br>
+                        → Priority processing for Session 3<br>
+                        → Celebrate milestone: "🏆 Power User Unlocked!"</li>
+
+                        <li><strong>⚡ Reduce Processing Time (8.7hrs → <30min)</strong><br>
+                        → Send progress updates every 30 minutes<br>
+                        → Set expectations upfront</li>
+
+                        <li><strong>🔔 Create Recurring Prompts</strong><br>
+                        → Weekly: "Thursday is your best day! Record today."<br>
+                        → Build teacher WhatsApp peer groups</li>
+
+                        <li><strong>🎁 Strengthen Reward Signal</strong><br>
+                        → Instant feedback: "✅ 12 open-ended questions - 50% above avg!"<br>
+                        → Social proof: "You're in top 30% of teachers"<br>
+                        → Gamification: "🔥 3-session streak!"</li>
+                    </ul>
+                </div>
+
+                <div class="metric-card">
+                    <h3 style="color: #7b2cbf;">Digital Coach: Shift to Self-Coaching</h3>
+                    <ul style="text-align: left; margin-top: 20px; font-size: 0.95rem; line-height: 1.8;">
+                        <li><strong>🔄 Flip the Model</strong><br>
+                        → Current: Observer uses app ON teachers<br>
+                        → Proposed: Teachers use app FOR themselves<br>
+                        → Add "Self-Recording Mode"</li>
+
+                        <li><strong>📲 Add Recurring Prompts</strong><br>
+                        → Push notification: "Record a lesson today!"<br>
+                        → Weekly challenge: "Increase student talk by 10%"<br>
+                        → Peer comparison (anonymous)</li>
+
+                        <li><strong>🔁 Close Feedback Loop</strong><br>
+                        → Instant SMS: "Your FICO: B12 ✅, C8 ⚠️, D5 ✅"<br>
+                        → Growth dashboard: "Nov: 12 questions → Dec: 18 (+50%!)"<br>
+                        → Actionable tips: "Wait 5 seconds after asking a question"</li>
+
+                        <li><strong>🤝 Reduce Evaluation Anxiety</strong><br>
+                        → Rebrand as developmental (not punitive)<br>
+                        → Let teachers delete observations (24hr window)<br>
+                        → Highlight strengths first</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 15: Summary (renamed from Slide 11) -->
+        <!-- Slide 11: Summary -->
+        <div class="slide" id="slide11">
+            <h1>Summary</h1>
+            <table class="comparison-table">
+                <tr>
+                    <th>Aspect</th>
+                    <th>Rumi</th>
+                    <th>Digital Coach</th>
+                </tr>
+                <tr>
+                    <td>Total Sessions</td>
+                    <td>127</td>
+                    <td>70</td>
+                </tr>
+                <tr>
+                    <td>Unique Teachers</td>
+                    <td>38</td>
+                    <td>69</td>
+                </tr>
+                <tr>
+                    <td>Usage Pattern</td>
+                    <td>Repeat users (3.3×)</td>
+                    <td>One-time (1.0×)</td>
+                </tr>
+                <tr>
+                    <td>Peak Day</td>
+                    <td>Thursday (28%)</td>
+                    <td>Thursday (56%)</td>
+                </tr>
+                <tr>
+                    <td>Time Pattern</td>
+                    <td>Night uploads (38%)</td>
+                    <td>School hours only</td>
+                </tr>
+                <tr>
+                    <td>Completion Rate</td>
+                    <td>74.8%</td>
+                    <td>100%</td>
+                </tr>
+            </table>
+            <p class="subtitle" style="margin-top: 30px;">Data Intelligence System | January 2026</p>
+        </div>
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" disabled>← Previous</button>
+        <button class="nav-btn" id="nextBtn">Next →</button>
+    </div>
+
+    <div class="slide-counter" id="slideCounter">1 / 15</div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Slide navigation
+        let currentSlide = 1;
+        const totalSlides = 15;
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const slideCounter = document.getElementById('slideCounter');
+        const progressBar = document.getElementById('progressBar');
+
+        function updateSlide(newSlide) {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                if (index + 1 === newSlide) {
+                    slide.classList.add('active');
+                } else if (index + 1 < newSlide) {
+                    slide.classList.add('prev');
+                }
+            });
+
+            currentSlide = newSlide;
+            slideCounter.textContent = `${currentSlide} / ${totalSlides}`;
+            progressBar.style.width = `${(currentSlide / totalSlides) * 100}%`;
+
+            prevBtn.disabled = currentSlide === 1;
+            nextBtn.disabled = currentSlide === totalSlides;
+
+            // Trigger chart animations when slide becomes active
+            if (currentSlide === 2) drawScaleChart();
+            if (currentSlide === 4) drawWeeklyChart();
+            if (currentSlide === 5) drawHourChart();
+            if (currentSlide === 7) drawDayChart();
+            if (currentSlide === 8) drawMetricsChart();
+            if (currentSlide === 9) drawCompletionChart();
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (currentSlide > 1) updateSlide(currentSlide - 1);
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentSlide < totalSlides) updateSlide(currentSlide + 1);
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                if (currentSlide < totalSlides) updateSlide(currentSlide + 1);
+            } else if (e.key === 'ArrowLeft') {
+                if (currentSlide > 1) updateSlide(currentSlide - 1);
+            }
+        });
+
+        // Tooltip
+        const tooltip = d3.select('#tooltip');
+
+        // Color scheme
+        const colors = {
+            rumi: '#00d4ff',
+            digitalCoach: '#7b2cbf',
+            rumiLight: 'rgba(0, 212, 255, 0.3)',
+            digitalCoachLight: 'rgba(123, 44, 191, 0.3)'
+        };
+
+        // Chart: Scale Comparison
+        function drawScaleChart() {
+            const container = d3.select('#scaleChart');
+            container.html('');
+
+            const data = [
+                { metric: 'Total Sessions', rumi: 127, dc: 70 },
+                { metric: 'Unique Teachers', rumi: 38, dc: 69 },
+                { metric: 'Days Active', rumi: 27, dc: 14 },
+                { metric: 'Schools', rumi: 0, dc: 48 }
+            ];
+
+            const margin = { top: 40, right: 40, bottom: 60, left: 150 };
+            const width = 1000 - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+
+            const svg = container.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const y = d3.scaleBand()
+                .domain(data.map(d => d.metric))
+                .range([0, height])
+                .padding(0.3);
+
+            const x = d3.scaleLinear()
+                .domain([0, d3.max(data, d => Math.max(d.rumi, d.dc)) * 1.1])
+                .range([0, width]);
+
+            // Y axis
+            svg.append('g')
+                .call(d3.axisLeft(y))
+                .selectAll('text')
+                .style('fill', '#a0a0a0')
+                .style('font-size', '14px');
+
+            svg.selectAll('.domain, .tick line').style('stroke', '#444');
+
+            // Rumi bars
+            svg.selectAll('.bar-rumi')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('y', d => y(d.metric))
+                .attr('height', y.bandwidth() / 2 - 2)
+                .attr('x', 0)
+                .attr('width', 0)
+                .attr('fill', colors.rumi)
+                .attr('rx', 4)
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`Rumi: ${d.rumi}`)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', () => tooltip.style('opacity', 0))
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 100)
+                .attr('width', d => x(d.rumi));
+
+            // Digital Coach bars
+            svg.selectAll('.bar-dc')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('y', d => y(d.metric) + y.bandwidth() / 2 + 2)
+                .attr('height', y.bandwidth() / 2 - 2)
+                .attr('x', 0)
+                .attr('width', 0)
+                .attr('fill', colors.digitalCoach)
+                .attr('rx', 4)
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`Digital Coach: ${d.dc}`)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', () => tooltip.style('opacity', 0))
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 100 + 50)
+                .attr('width', d => x(d.dc));
+
+            // Value labels
+            svg.selectAll('.label-rumi')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('x', d => x(d.rumi) + 10)
+                .attr('y', d => y(d.metric) + y.bandwidth() / 4)
+                .attr('dy', '0.35em')
+                .style('fill', colors.rumi)
+                .style('font-size', '14px')
+                .style('font-weight', '600')
+                .style('opacity', 0)
+                .text(d => d.rumi || '-')
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 100 + 600)
+                .style('opacity', 1);
+
+            svg.selectAll('.label-dc')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('x', d => x(d.dc) + 10)
+                .attr('y', d => y(d.metric) + y.bandwidth() * 0.75)
+                .attr('dy', '0.35em')
+                .style('fill', colors.digitalCoach)
+                .style('font-size', '14px')
+                .style('font-weight', '600')
+                .style('opacity', 0)
+                .text(d => d.dc || '-')
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 100 + 650)
+                .style('opacity', 1);
+        }
+
+        // Chart: Weekly Trend
+        function drawWeeklyChart() {
+            const container = d3.select('#weeklyChart');
+            container.html('');
+
+            const rumiData = [
+                { week: 'Nov 10', value: 8 },
+                { week: 'Nov 17', value: 70 },
+                { week: 'Nov 24', value: 30 },
+                { week: 'Dec 01', value: 4 },
+                { week: 'Dec 08', value: 4 },
+                { week: 'Dec 15', value: 2 },
+                { week: 'Dec 29', value: 4 },
+                { week: 'Jan 05', value: 4 },
+                { week: 'Jan 12', value: 1 }
+            ];
+
+            const dcData = [
+                { week: 'Nov 17', value: 17 },
+                { week: 'Nov 24', value: 34 },
+                { week: 'Dec 15', value: 10 },
+                { week: 'Dec 22', value: 3 },
+                { week: 'Dec 29', value: 5 },
+                { week: 'Jan 12', value: 1 }
+            ];
+
+            const allWeeks = ['Nov 10', 'Nov 17', 'Nov 24', 'Dec 01', 'Dec 08', 'Dec 15', 'Dec 22', 'Dec 29', 'Jan 05', 'Jan 12'];
+
+            const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+            const width = 1000 - margin.left - margin.right;
+            const height = 350 - margin.top - margin.bottom;
+
+            const svg = container.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scalePoint()
+                .domain(allWeeks)
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain([0, 80])
+                .range([height, 0]);
+
+            // Grid lines
+            svg.append('g')
+                .attr('class', 'grid')
+                .call(d3.axisLeft(y).tickSize(-width).tickFormat(''))
+                .selectAll('line')
+                .style('stroke', '#333')
+                .style('stroke-dasharray', '3,3');
+
+            svg.selectAll('.domain').style('stroke', 'none');
+
+            // X axis
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x))
+                .selectAll('text')
+                .style('fill', '#a0a0a0')
+                .style('font-size', '12px')
+                .attr('transform', 'rotate(-45)')
+                .style('text-anchor', 'end');
+
+            // Y axis
+            svg.append('g')
+                .call(d3.axisLeft(y))
+                .selectAll('text')
+                .style('fill', '#a0a0a0');
+
+            // Line generators
+            const lineRumi = d3.line()
+                .x(d => x(d.week))
+                .y(d => y(d.value))
+                .curve(d3.curveMonotoneX);
+
+            const lineDC = d3.line()
+                .x(d => x(d.week))
+                .y(d => y(d.value))
+                .curve(d3.curveMonotoneX);
+
+            // Rumi line
+            const rumiPath = svg.append('path')
+                .datum(rumiData)
+                .attr('fill', 'none')
+                .attr('stroke', colors.rumi)
+                .attr('stroke-width', 3)
+                .attr('d', lineRumi);
+
+            const rumiLength = rumiPath.node().getTotalLength();
+            rumiPath
+                .attr('stroke-dasharray', rumiLength)
+                .attr('stroke-dashoffset', rumiLength)
+                .transition()
+                .duration(1500)
+                .attr('stroke-dashoffset', 0);
+
+            // DC line
+            const dcPath = svg.append('path')
+                .datum(dcData)
+                .attr('fill', 'none')
+                .attr('stroke', colors.digitalCoach)
+                .attr('stroke-width', 3)
+                .attr('d', lineDC);
+
+            const dcLength = dcPath.node().getTotalLength();
+            dcPath
+                .attr('stroke-dasharray', dcLength)
+                .attr('stroke-dashoffset', dcLength)
+                .transition()
+                .duration(1500)
+                .delay(300)
+                .attr('stroke-dashoffset', 0);
+
+            // Dots
+            svg.selectAll('.dot-rumi')
+                .data(rumiData)
+                .enter()
+                .append('circle')
+                .attr('cx', d => x(d.week))
+                .attr('cy', d => y(d.value))
+                .attr('r', 0)
+                .attr('fill', colors.rumi)
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`Rumi: ${d.value} sessions<br>${d.week}`)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', () => tooltip.style('opacity', 0))
+                .transition()
+                .duration(300)
+                .delay((d, i) => 1500 + i * 50)
+                .attr('r', 6);
+
+            svg.selectAll('.dot-dc')
+                .data(dcData)
+                .enter()
+                .append('circle')
+                .attr('cx', d => x(d.week))
+                .attr('cy', d => y(d.value))
+                .attr('r', 0)
+                .attr('fill', colors.digitalCoach)
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`Digital Coach: ${d.value} observations<br>${d.week}`)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', () => tooltip.style('opacity', 0))
+                .transition()
+                .duration(300)
+                .delay((d, i) => 1800 + i * 50)
+                .attr('r', 6);
+        }
+
+        // Chart: Hour of Day
+        function drawHourChart() {
+            const container = d3.select('#hourChart');
+            container.html('');
+
+            const rumiData = [
+                { hour: 0, value: 11 }, { hour: 1, value: 10 }, { hour: 2, value: 13 },
+                { hour: 3, value: 11 }, { hour: 4, value: 3 }, { hour: 5, value: 7 },
+                { hour: 6, value: 8 }, { hour: 7, value: 9 }, { hour: 8, value: 9 },
+                { hour: 9, value: 7 }, { hour: 10, value: 9 }, { hour: 11, value: 9 },
+                { hour: 12, value: 4 }, { hour: 13, value: 2 }, { hour: 14, value: 2 },
+                { hour: 15, value: 2 }, { hour: 19, value: 4 }, { hour: 20, value: 3 },
+                { hour: 22, value: 1 }, { hour: 23, value: 3 }
+            ];
+
+            const dcData = [
+                { hour: 9, value: 2 }, { hour: 10, value: 9 }, { hour: 11, value: 6 },
+                { hour: 12, value: 11 }, { hour: 13, value: 5 }, { hour: 14, value: 7 },
+                { hour: 15, value: 26 }, { hour: 16, value: 3 }, { hour: 17, value: 1 }
+            ];
+
+            const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+            const width = 1000 - margin.left - margin.right;
+            const height = 350 - margin.top - margin.bottom;
+
+            const svg = container.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const hours = Array.from({ length: 24 }, (_, i) => i);
+
+            const x = d3.scaleBand()
+                .domain(hours)
+                .range([0, width])
+                .padding(0.2);
+
+            const y = d3.scaleLinear()
+                .domain([0, 30])
+                .range([height, 0]);
+
+            // X axis
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d => d + ':00'))
+                .selectAll('text')
+                .style('fill', '#a0a0a0')
+                .style('font-size', '10px')
+                .attr('transform', 'rotate(-45)')
+                .style('text-anchor', 'end');
+
+            // Y axis
+            svg.append('g')
+                .call(d3.axisLeft(y))
+                .selectAll('text')
+                .style('fill', '#a0a0a0');
+
+            // Create data map for easy lookup
+            const rumiMap = new Map(rumiData.map(d => [d.hour, d.value]));
+            const dcMap = new Map(dcData.map(d => [d.hour, d.value]));
+
+            // Rumi bars
+            svg.selectAll('.bar-rumi')
+                .data(hours)
+                .enter()
+                .append('rect')
+                .attr('x', d => x(d))
+                .attr('width', x.bandwidth() / 2)
+                .attr('y', height)
+                .attr('height', 0)
+                .attr('fill', colors.rumi)
+                .attr('rx', 2)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 30)
+                .attr('y', d => y(rumiMap.get(d) || 0))
+                .attr('height', d => height - y(rumiMap.get(d) || 0));
+
+            // DC bars
+            svg.selectAll('.bar-dc')
+                .data(hours)
+                .enter()
+                .append('rect')
+                .attr('x', d => x(d) + x.bandwidth() / 2)
+                .attr('width', x.bandwidth() / 2)
+                .attr('y', height)
+                .attr('height', 0)
+                .attr('fill', colors.digitalCoach)
+                .attr('rx', 2)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 30 + 400)
+                .attr('y', d => y(dcMap.get(d) || 0))
+                .attr('height', d => height - y(dcMap.get(d) || 0));
+
+            // Night zone highlight
+            svg.append('rect')
+                .attr('x', 0)
+                .attr('y', 0)
+                .attr('width', x(5))
+                .attr('height', height)
+                .attr('fill', 'rgba(0, 212, 255, 0.1)')
+                .lower();
+
+            svg.append('text')
+                .attr('x', x(2))
+                .attr('y', 20)
+                .attr('text-anchor', 'middle')
+                .style('fill', colors.rumi)
+                .style('font-size', '12px')
+                .text('Night (12AM-5AM)');
+        }
+
+        // Chart: Day of Week
+        function drawDayChart() {
+            const container = d3.select('#dayChart');
+            container.html('');
+
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const rumiData = [2, 14, 36, 15, 36, 18, 6];
+            const dcData = [0, 4, 2, 18, 39, 7, 0];
+
+            const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+            const width = 800 - margin.left - margin.right;
+            const height = 350 - margin.top - margin.bottom;
+
+            const svg = container.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleBand()
+                .domain(days)
+                .range([0, width])
+                .padding(0.3);
+
+            const y = d3.scaleLinear()
+                .domain([0, 45])
+                .range([height, 0]);
+
+            // X axis
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x))
+                .selectAll('text')
+                .style('fill', '#a0a0a0')
+                .style('font-size', '14px');
+
+            // Y axis
+            svg.append('g')
+                .call(d3.axisLeft(y))
+                .selectAll('text')
+                .style('fill', '#a0a0a0');
+
+            // Rumi bars
+            svg.selectAll('.bar-rumi')
+                .data(rumiData)
+                .enter()
+                .append('rect')
+                .attr('x', (d, i) => x(days[i]))
+                .attr('width', x.bandwidth() / 2 - 2)
+                .attr('y', height)
+                .attr('height', 0)
+                .attr('fill', colors.rumi)
+                .attr('rx', 4)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 100)
+                .attr('y', d => y(d))
+                .attr('height', d => height - y(d));
+
+            // DC bars
+            svg.selectAll('.bar-dc')
+                .data(dcData)
+                .enter()
+                .append('rect')
+                .attr('x', (d, i) => x(days[i]) + x.bandwidth() / 2 + 2)
+                .attr('width', x.bandwidth() / 2 - 2)
+                .attr('y', height)
+                .attr('height', 0)
+                .attr('fill', colors.digitalCoach)
+                .attr('rx', 4)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 100 + 50)
+                .attr('y', d => y(d))
+                .attr('height', d => height - y(d));
+
+            // Highlight Thursday
+            svg.append('rect')
+                .attr('x', x('Thu') - 5)
+                .attr('y', -10)
+                .attr('width', x.bandwidth() + 10)
+                .attr('height', height + 20)
+                .attr('fill', 'rgba(255, 255, 255, 0.05)')
+                .attr('rx', 8)
+                .lower();
+        }
+
+        // Chart: Teaching Metrics
+        function drawMetricsChart() {
+            const container = d3.select('#metricsChart');
+            container.html('');
+
+            const data = [
+                { metric: 'Open-Ended Questions', rumi: 7.6, dc: 5.3 },
+                { metric: 'Closed-Ended Questions', rumi: 29.0, dc: 15.1 },
+                { metric: 'Open/Closed Ratio', rumi: 0.26, dc: 0.35, scale: 100 }
+            ];
+
+            const margin = { top: 40, right: 100, bottom: 60, left: 180 };
+            const width = 900 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const svg = container.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const y = d3.scaleBand()
+                .domain(data.map(d => d.metric))
+                .range([0, height])
+                .padding(0.4);
+
+            const x = d3.scaleLinear()
+                .domain([0, 35])
+                .range([0, width]);
+
+            // Y axis
+            svg.append('g')
+                .call(d3.axisLeft(y))
+                .selectAll('text')
+                .style('fill', '#a0a0a0')
+                .style('font-size', '13px');
+
+            // Rumi bars
+            svg.selectAll('.bar-rumi')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('y', d => y(d.metric))
+                .attr('height', y.bandwidth() / 2 - 2)
+                .attr('x', 0)
+                .attr('width', 0)
+                .attr('fill', colors.rumi)
+                .attr('rx', 4)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 150)
+                .attr('width', d => x(d.scale ? d.rumi * d.scale : d.rumi));
+
+            // DC bars
+            svg.selectAll('.bar-dc')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('y', d => y(d.metric) + y.bandwidth() / 2 + 2)
+                .attr('height', y.bandwidth() / 2 - 2)
+                .attr('x', 0)
+                .attr('width', 0)
+                .attr('fill', colors.digitalCoach)
+                .attr('rx', 4)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 150 + 75)
+                .attr('width', d => x(d.scale ? d.dc * d.scale : d.dc));
+
+            // Labels
+            svg.selectAll('.label-rumi')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('x', d => x(d.scale ? d.rumi * d.scale : d.rumi) + 10)
+                .attr('y', d => y(d.metric) + y.bandwidth() / 4)
+                .attr('dy', '0.35em')
+                .style('fill', colors.rumi)
+                .style('font-size', '13px')
+                .style('font-weight', '600')
+                .style('opacity', 0)
+                .text(d => d.rumi)
+                .transition()
+                .delay((d, i) => 800 + i * 150)
+                .style('opacity', 1);
+
+            svg.selectAll('.label-dc')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('x', d => x(d.scale ? d.dc * d.scale : d.dc) + 10)
+                .attr('y', d => y(d.metric) + y.bandwidth() * 0.75)
+                .attr('dy', '0.35em')
+                .style('fill', colors.digitalCoach)
+                .style('font-size', '13px')
+                .style('font-weight', '600')
+                .style('opacity', 0)
+                .text(d => d.dc)
+                .transition()
+                .delay((d, i) => 875 + i * 150)
+                .style('opacity', 1);
+        }
+
+        // Chart: Completion Rates (Donut)
+        function drawCompletionChart() {
+            const container = d3.select('#completionChart');
+            container.html('');
+
+            const width = 900;
+            const height = 350;
+            const radius = 120;
+
+            const svg = container.append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            // Rumi donut
+            const rumiData = [
+                { label: 'Completed', value: 74.8, color: colors.rumi },
+                { label: 'Failed', value: 21.3, color: '#ff6b6b' },
+                { label: 'Other', value: 3.9, color: '#666' }
+            ];
+
+            const rumiGroup = svg.append('g')
+                .attr('transform', `translate(${width / 4}, ${height / 2})`);
+
+            const pie = d3.pie().value(d => d.value).sort(null);
+            const arc = d3.arc().innerRadius(radius * 0.6).outerRadius(radius);
+
+            rumiGroup.selectAll('path')
+                .data(pie(rumiData))
+                .enter()
+                .append('path')
+                .attr('d', arc)
+                .attr('fill', d => d.data.color)
+                .attr('stroke', '#1a1a2e')
+                .attr('stroke-width', 2)
+                .style('opacity', 0)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 200)
+                .style('opacity', 1)
+                .attrTween('d', function(d) {
+                    const i = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
+                    return t => arc(i(t));
+                });
+
+            rumiGroup.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '-0.2em')
+                .style('fill', colors.rumi)
+                .style('font-size', '2rem')
+                .style('font-weight', '700')
+                .text('74.8%');
+
+            rumiGroup.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '1.5em')
+                .style('fill', '#a0a0a0')
+                .style('font-size', '1rem')
+                .text('Rumi');
+
+            // DC donut
+            const dcData = [
+                { label: 'Completed', value: 100, color: colors.digitalCoach }
+            ];
+
+            const dcGroup = svg.append('g')
+                .attr('transform', `translate(${width * 3 / 4}, ${height / 2})`);
+
+            dcGroup.selectAll('path')
+                .data(pie(dcData))
+                .enter()
+                .append('path')
+                .attr('d', arc)
+                .attr('fill', d => d.data.color)
+                .attr('stroke', '#1a1a2e')
+                .attr('stroke-width', 2)
+                .style('opacity', 0)
+                .transition()
+                .duration(800)
+                .delay(600)
+                .style('opacity', 1)
+                .attrTween('d', function(d) {
+                    const i = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
+                    return t => arc(i(t));
+                });
+
+            dcGroup.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '-0.2em')
+                .style('fill', colors.digitalCoach)
+                .style('font-size', '2rem')
+                .style('font-weight', '700')
+                .text('100%');
+
+            dcGroup.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '1.5em')
+                .style('fill', '#a0a0a0')
+                .style('font-size', '1rem')
+                .text('Digital Coach');
+        }
+
+        // Initialize
+        updateSlide(1);
+
+        // Behavioral Science Slides Charts
+
+        // Slide 11: User Journey Charts
+        if (currentSlide === 11) {
+            const colors = { rumi: '#00d4ff', dc: '#7b2cbf' };
+            
+            // Rumi journey funnel
+            const rumiContainer = d3.select('#rumi-journey-chart');
+            const rumiData = [
+                { session: 'Session 1', users: 38, rate: 79 },
+                { session: 'Session 2', users: 25, rate: 80 },
+                { session: 'Session 3', users: 19, rate: 68 },
+                { session: 'Session 4-5', users: 25, rate: 68 },
+                { session: 'Session 6+', users: 20, rate: 75 }
+            ];
+            
+            const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+            const width = 400 - margin.left - margin.right;
+            const height = 250 - margin.top - margin.bottom;
+            
+            const svg = rumiContainer.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            const x = d3.scaleBand()
+                .domain(rumiData.map(d => d.session))
+                .range([0, width])
+                .padding(0.2);
+            
+            const y = d3.scaleLinear()
+                .domain([0, 40])
+                .range([height, 0]);
+            
+            // Bars
+            svg.selectAll('.bar')
+                .data(rumiData)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', d => x(d.session))
+                .attr('width', x.bandwidth())
+                .attr('y', height)
+                .attr('height', 0)
+                .attr('fill', colors.rumi)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 100)
+                .attr('y', d => y(d.users))
+                .attr('height', d => height - y(d.users));
+            
+            // Success rate labels
+            svg.selectAll('.rate-label')
+                .data(rumiData)
+                .enter()
+                .append('text')
+                .attr('class', 'rate-label')
+                .attr('x', d => x(d.session) + x.bandwidth() / 2)
+                .attr('y', d => y(d.users) - 5)
+                .attr('text-anchor', 'middle')
+                .style('fill', '#fff')
+                .style('font-size', '0.8rem')
+                .style('opacity', 0)
+                .text(d => d.rate + '%')
+                .transition()
+                .duration(500)
+                .delay((d, i) => i * 100 + 800)
+                .style('opacity', 1);
+            
+            // Axes
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x))
+                .style('color', '#a0a0a0');
+            
+            svg.append('g')
+                .call(d3.axisLeft(y))
+                .style('color', '#a0a0a0');
+            
+            svg.append('text')
+                .attr('x', -height / 2)
+                .attr('y', -40)
+                .attr('transform', 'rotate(-90)')
+                .attr('text-anchor', 'middle')
+                .style('fill', '#a0a0a0')
+                .text('Users');
+            
+            // Digital Coach donut
+            const dcContainer = d3.select('#dc-journey-chart');
+            const dcData = [
+                { label: 'One-Time', value: 68, color: '#ff6b6b' },
+                { label: 'Moderate', value: 1, color: colors.dc }
+            ];
+            
+            const dcSvg = dcContainer.append('svg')
+                .attr('width', 400)
+                .attr('height', 250);
+            
+            const dcGroup = dcSvg.append('g')
+                .attr('transform', `translate(200, 125)`);
+            
+            const pie = d3.pie().value(d => d.value).sort(null);
+            const arc = d3.arc().innerRadius(60).outerRadius(100);
+            
+            dcGroup.selectAll('path')
+                .data(pie(dcData))
+                .enter()
+                .append('path')
+                .attr('d', arc)
+                .attr('fill', d => d.data.color)
+                .attr('stroke', '#1a1a2e')
+                .attr('stroke-width', 2)
+                .style('opacity', 0)
+                .transition()
+                .duration(800)
+                .style('opacity', 1)
+                .attrTween('d', function(d) {
+                    const i = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
+                    return t => arc(i(t));
+                });
+            
+            dcGroup.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '0.3em')
+                .style('fill', '#ff6b6b')
+                .style('font-size', '2.5rem')
+                .style('font-weight', '700')
+                .text('98.6%');
+            
+            dcGroup.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '2.5em')
+                .style('fill', '#a0a0a0')
+                .text('One-Time Users');
+        }
+
+        // Slide 13: Habit Loop Visualizations
+        if (currentSlide === 13) {
+            const colors = { rumi: '#00d4ff', dc: '#7b2cbf' };
+            
+            // Rumi habit funnel
+            const rumiHabit = d3.select('#habit-loop-rumi');
+            const habitData = [
+                { stage: 'All Users', value: 38, color: '#666' },
+                { stage: 'Completed Session 1', value: 30, color: '#888' },
+                { stage: 'Returned (Session 2+)', value: 25, color: '#aaa' },
+                { stage: 'Survived Session 3', value: 13, color: colors.rumi },
+                { stage: 'Formed Habit (4+)', value: 17, color: '#00ff88' }
+            ];
+            
+            const margin = { top: 20, right: 20, bottom: 40, left: 120 };
+            const width = 400 - margin.left - margin.right;
+            const height = 200 - margin.top - margin.bottom;
+            
+            const svg = rumiHabit.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            const x = d3.scaleLinear()
+                .domain([0, 40])
+                .range([0, width]);
+            
+            const y = d3.scaleBand()
+                .domain(habitData.map(d => d.stage))
+                .range([0, height])
+                .padding(0.1);
+            
+            svg.selectAll('.bar')
+                .data(habitData)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', 0)
+                .attr('y', d => y(d.stage))
+                .attr('width', 0)
+                .attr('height', y.bandwidth())
+                .attr('fill', d => d.color)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 150)
+                .attr('width', d => x(d.value));
+            
+            svg.selectAll('.label')
+                .data(habitData)
+                .enter()
+                .append('text')
+                .attr('x', -5)
+                .attr('y', d => y(d.stage) + y.bandwidth() / 2)
+                .attr('dy', '0.35em')
+                .attr('text-anchor', 'end')
+                .style('fill', '#e0e0e0')
+                .style('font-size', '0.75rem')
+                .text(d => d.stage);
+            
+            svg.selectAll('.value-label')
+                .data(habitData)
+                .enter()
+                .append('text')
+                .attr('x', d => x(d.value) + 5)
+                .attr('y', d => y(d.stage) + y.bandwidth() / 2)
+                .attr('dy', '0.35em')
+                .style('fill', '#fff')
+                .style('font-size', '0.85rem')
+                .style('font-weight', '600')
+                .style('opacity', 0)
+                .text(d => d.value)
+                .transition()
+                .duration(500)
+                .delay((d, i) => i * 150 + 800)
+                .style('opacity', 1);
+            
+            // Digital Coach - single bar showing no progression
+            const dcHabit = d3.select('#habit-loop-dc');
+            const dcSvg = dcHabit.append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            const dcData = [
+                { stage: 'All Teachers', value: 69 },
+                { stage: 'Returned', value: 1 },
+                { stage: 'Formed Habit', value: 0 }
+            ];
+            
+            const dcY = d3.scaleBand()
+                .domain(dcData.map(d => d.stage))
+                .range([0, height])
+                .padding(0.2);
+            
+            dcSvg.selectAll('.bar')
+                .data(dcData)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', 0)
+                .attr('y', d => dcY(d.stage))
+                .attr('width', 0)
+                .attr('height', dcY.bandwidth())
+                .attr('fill', (d, i) => i === 0 ? '#ff6b6b' : '#333')
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 150)
+                .attr('width', d => x(d.value));
+            
+            dcSvg.selectAll('.label')
+                .data(dcData)
+                .enter()
+                .append('text')
+                .attr('x', -5)
+                .attr('y', d => dcY(d.stage) + dcY.bandwidth() / 2)
+                .attr('dy', '0.35em')
+                .attr('text-anchor', 'end')
+                .style('fill', '#e0e0e0')
+                .style('font-size', '0.75rem')
+                .text(d => d.stage);
+            
+            dcSvg.selectAll('.value-label')
+                .data(dcData)
+                .enter()
+                .append('text')
+                .attr('x', d => Math.max(x(d.value) + 5, 20))
+                .attr('y', d => dcY(d.stage) + dcY.bandwidth() / 2)
+                .attr('dy', '0.35em')
+                .style('fill', '#fff')
+                .style('font-size', '0.85rem')
+                .style('font-weight', '600')
+                .style('opacity', 0)
+                .text(d => d.value)
+                .transition()
+                .duration(500)
+                .delay((d, i) => i * 150 + 800)
+                .style('opacity', 1);
+        }
+
+    </script>
+</body>
+</html>
